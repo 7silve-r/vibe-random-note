@@ -4,25 +4,24 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.common.PageResult;
-import com.silver.diary.exception.BusinessException;
-import com.silver.diary.utils.SecurityUtil;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.PageResult;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.ArtistAddDto;
 import com.silver.music.dto.ArtistQueryDto;
 import com.silver.music.dto.ArtistUpdateDto;
 import com.silver.music.entity.Artist;
 import com.silver.music.entity.UserFavorite;
-import com.silver.music.enumeration.FavoriteStatus;
 import com.silver.music.mapper.ArtistMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
 import com.silver.music.service.ArtistService;
-import com.silver.music.service.MinioService;
-import com.silver.music.upload.UploadCleanup;
 import com.silver.music.vo.ArtistDetailVo;
 import com.silver.music.vo.ArtistNameVo;
 import com.silver.music.vo.ArtistVo;
 import com.silver.music.vo.SongVo;
+import com.silver.storage.service.FileStorage;
+import com.silver.storage.support.UploadCleanup;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +36,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
     @Autowired private ArtistMapper artistMapper;
     @Autowired private SongMapper songMapper;
     @Autowired private UserFavoriteMapper userFavoriteMapper;
-    @Autowired private MinioService minioService;
+    @Autowired private FileStorage fileStorage;
 
     @Override
     public PageResult<ArtistVo> listArtists(ArtistQueryDto artistDto) {
@@ -99,18 +98,15 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
                 artistMapper.selectList(
                         new LambdaQueryWrapper<Artist>().orderByDesc(Artist::getArtistId));
 
-        List<ArtistNameVo> artistNameVoList =
-                artists.stream()
-                        .map(
-                                artist -> {
-                                    ArtistNameVo artistNameVo = new ArtistNameVo();
-                                    artistNameVo.setArtistId(artist.getArtistId());
-                                    artistNameVo.setArtistName(artist.getArtistName());
-                                    return artistNameVo;
-                                })
-                        .toList();
-
-        return artistNameVoList;
+        return artists.stream()
+                .map(
+                        artist -> {
+                            ArtistNameVo artistNameVo = new ArtistNameVo();
+                            artistNameVo.setArtistId(artist.getArtistId());
+                            artistNameVo.setArtistName(artist.getArtistName());
+                            return artistNameVo;
+                        })
+                .toList();
     }
 
     @Override
@@ -120,17 +116,14 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
 
         List<Artist> artists = artistMapper.selectList(query);
 
-        List<ArtistVo> artistVoList =
-                artists.stream()
-                        .map(
-                                artist -> {
-                                    ArtistVo artistVo = new ArtistVo();
-                                    BeanUtils.copyProperties(artist, artistVo);
-                                    return artistVo;
-                                })
-                        .toList();
-
-        return artistVoList;
+        return artists.stream()
+                .map(
+                        artist -> {
+                            ArtistVo artistVo = new ArtistVo();
+                            BeanUtils.copyProperties(artist, artistVo);
+                            return artistVo;
+                        })
+                .toList();
     }
 
     @Override
@@ -141,7 +134,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         ArtistDetailVo artistDetailVo = new ArtistDetailVo();
         BeanUtils.copyProperties(artist, artistDetailVo);
         List<SongVo> songVoList = songMapper.listByArtist(artistId);
-        songVoList.forEach(songVo -> songVo.setFavoriteStatus(FavoriteStatus.NONE.getId()));
+        songVoList.forEach(songVo -> songVo.setCollected(false));
 
         Long userId = SecurityUtil.optionalUserId();
 
@@ -158,7 +151,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
 
             for (SongVo songVo : songVoList) {
                 if (favoriteSongIds.contains(songVo.getSongId())) {
-                    songVo.setFavoriteStatus(FavoriteStatus.SAVED.getId());
+                    songVo.setCollected(true);
                 }
             }
         }
@@ -227,7 +220,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
             throw new BusinessException("更新失败");
         }
 
-        UploadCleanup.afterCommit(minioService, avatarUrl);
+        UploadCleanup.afterCommit(fileStorage, avatarUrl);
     }
 
     @Override
@@ -241,7 +234,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         String avatarUrl = artist.getAvatar();
 
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
-            UploadCleanup.afterCommit(minioService, avatarUrl);
+            UploadCleanup.afterCommit(fileStorage, avatarUrl);
         }
 
         if (artistMapper.deleteById(artistId) == 0) {
@@ -261,7 +254,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
                         .toList();
 
         for (String avatarUrl : avatarUrlList) {
-            UploadCleanup.afterCommit(minioService, avatarUrl);
+            UploadCleanup.afterCommit(fileStorage, avatarUrl);
         }
 
         if (artistMapper.deleteByIds(artistIds) == 0) {

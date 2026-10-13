@@ -4,16 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.common.PageResult;
-import com.silver.diary.exception.BusinessException;
+import com.silver.common.PageResult;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.BannerQueryDto;
 import com.silver.music.entity.Banner;
-import com.silver.music.enumeration.BannerStatus;
 import com.silver.music.mapper.BannerMapper;
 import com.silver.music.service.BannerService;
-import com.silver.music.service.MinioService;
-import com.silver.music.upload.UploadCleanup;
 import com.silver.music.vo.BannerVo;
+import com.silver.storage.service.FileStorage;
+import com.silver.storage.support.UploadCleanup;
 import java.util.List;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +23,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> implements BannerService {
 
     @Autowired private BannerMapper bannerMapper;
-    @Autowired private MinioService minioService;
+    @Autowired private FileStorage fileStorage;
 
     @Override
-    public PageResult<Banner> listBanners(BannerQueryDto bannerDto) {
+    public PageResult<BannerVo> listBanners(BannerQueryDto bannerDto) {
 
         Page<Banner> page = new Page<>(bannerDto.getPageNum(), bannerDto.getPageSize());
         LambdaQueryWrapper<Banner> query = new LambdaQueryWrapper<>();
-        if (bannerDto.getBannerStatus() != null) {
-            query.eq(Banner::getBannerStatus, bannerDto.getBannerStatus().getId());
+        if (bannerDto.getEnabled() != null) {
+            query.eq(Banner::getStatus, bannerDto.getEnabled() ? 0 : 1);
         }
 
         query.orderByDesc(Banner::getBannerId);
 
         IPage<Banner> bannerPage = bannerMapper.selectPage(page, query);
 
-        return new PageResult<>(bannerPage.getTotal(), bannerPage.getRecords());
+        return new PageResult<>(
+                bannerPage.getTotal(), bannerPage.getRecords().stream().map(this::toVo).toList());
     }
 
     @Override
@@ -47,7 +47,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
     public void addBanner(String bannerUrl) {
         Banner banner = new Banner();
         banner.setBannerUrl(bannerUrl);
-        banner.setBannerStatus(BannerStatus.ENABLE);
+        banner.setStatus(0);
 
         if (bannerMapper.insert(banner) == 0) {
             throw new BusinessException("添加失败");
@@ -66,25 +66,16 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
             throw new BusinessException("更新失败");
         }
 
-        UploadCleanup.afterCommit(minioService, oldBannerUrl);
+        UploadCleanup.afterCommit(fileStorage, oldBannerUrl);
     }
 
     @Override
     @Transactional
-    public void updateBannerStatus(Long bannerId, Integer bannerStatus) {
-
-        BannerStatus statusEnum;
-        if (bannerStatus == 0) {
-            statusEnum = BannerStatus.ENABLE;
-        } else if (bannerStatus == 1) {
-            statusEnum = BannerStatus.DISABLE;
-        } else {
-            throw new BusinessException("轮播图状态无效");
-        }
+    public void updateBannerStatus(Long bannerId, boolean enabled) {
 
         Banner banner = new Banner();
         banner.setBannerId(bannerId);
-        banner.setBannerStatus(statusEnum);
+        banner.setStatus(enabled ? 0 : 1);
 
         if (bannerMapper.updateById(banner) == 0) {
             throw new BusinessException("更新失败");
@@ -100,7 +91,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
         }
         String bannerUrl = banner.getBannerUrl();
         if (bannerUrl != null && !bannerUrl.isEmpty()) {
-            UploadCleanup.afterCommit(minioService, bannerUrl);
+            UploadCleanup.afterCommit(fileStorage, bannerUrl);
         }
 
         if (bannerMapper.deleteById(bannerId) == 0) {
@@ -117,7 +108,7 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
                         .map(Banner::getBannerUrl)
                         .filter(url -> url != null && !url.isEmpty())
                         .toList();
-        bannerUrlList.forEach(url -> UploadCleanup.afterCommit(minioService, url));
+        bannerUrlList.forEach(url -> UploadCleanup.afterCommit(fileStorage, url));
 
         if (bannerMapper.deleteByIds(bannerIds) == 0) {
             throw new BusinessException("删除失败");
@@ -130,20 +121,17 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
         List<Banner> banners =
                 bannerMapper.selectList(
                         new LambdaQueryWrapper<Banner>()
-                                .eq(Banner::getBannerStatus, BannerStatus.ENABLE.getId())
+                                .eq(Banner::getStatus, 0)
                                 .orderByDesc(Banner::getBannerId)
                                 .last("limit 9"));
 
-        List<BannerVo> bannerVoList =
-                banners.stream()
-                        .map(
-                                banner -> {
-                                    BannerVo bannerVo = new BannerVo();
-                                    BeanUtils.copyProperties(banner, bannerVo);
-                                    return bannerVo;
-                                })
-                        .toList();
+        return banners.stream().map(this::toVo).toList();
+    }
 
-        return bannerVoList;
+    private BannerVo toVo(Banner banner) {
+        BannerVo vo = new BannerVo();
+        BeanUtils.copyProperties(banner, vo);
+        vo.setEnabled(Integer.valueOf(0).equals(banner.getStatus()));
+        return vo;
     }
 }

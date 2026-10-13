@@ -4,7 +4,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.silver.diary.utils.JwtUtil;
+import com.silver.account.utils.JwtUtil;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -249,10 +249,71 @@ class MusicTest {
                                 .header("Authorization", token))
                 .andExpect(status().isOk());
         mvc.perform(get("/music/public/song/getSongDetail/1").header("Authorization", token))
-                .andExpect(jsonPath("$.data.favoriteStatus").value(1))
+                .andExpect(jsonPath("$.data.collected").value(true))
                 .andExpect(jsonPath("$.data.likeStatus").doesNotExist());
         mvc.perform(get("/music/public/song/getSongDetail/1"))
-                .andExpect(jsonPath("$.data.favoriteStatus").value(0));
+                .andExpect(jsonPath("$.data.collected").value(false));
+        mvc.perform(
+                        delete("/music/favorite/cancelCollectSong")
+                                .param("songId", "1")
+                                .header("Authorization", token))
+                .andExpect(status().isOk());
+        mvc.perform(get("/music/public/song/getSongDetail/1").header("Authorization", token))
+                .andExpect(jsonPath("$.data.collected").value(false));
+        mvc.perform(
+                        post("/music/favorite/collectPlaylist")
+                                .param("playlistId", "1")
+                                .header("Authorization", token))
+                .andExpect(status().isOk());
+        mvc.perform(
+                        get("/music/public/playlist/getPlaylistDetail/1")
+                                .header("Authorization", token))
+                .andExpect(jsonPath("$.data.collected").value(true));
+        mvc.perform(get("/music/public/playlist/getPlaylistDetail/1"))
+                .andExpect(jsonPath("$.data.collected").value(false));
+    }
+
+    @Test
+    void booleanBannerState() throws Exception {
+        jdbc.update("INSERT INTO tb_banner (id, banner_url, status) VALUES (1, '/banner.png', 0)");
+        String token = jwt.generateToken("ADMIN");
+        mvc.perform(
+                        post("/music/admin/listBanners")
+                                .header("Authorization", token)
+                                .contentType("application/json")
+                                .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.list[0].enabled").value(true))
+                .andExpect(jsonPath("$.data.list[0].status").doesNotExist());
+        mvc.perform(
+                        patch("/music/admin/updateBannerStatus/1")
+                                .header("Authorization", token)
+                                .param("enabled", "false"))
+                .andExpect(status().isOk());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                1, jdbc.queryForObject("SELECT status FROM tb_banner WHERE id = 1", Integer.class));
+        mvc.perform(get("/music/public/banner/getBannerList"))
+                .andExpect(jsonPath("$.data").isEmpty());
+        mvc.perform(
+                        post("/music/admin/listBanners")
+                                .header("Authorization", token)
+                                .contentType("application/json")
+                                .content("{\"enabled\":false}"))
+                .andExpect(jsonPath("$.data.list[0].enabled").value(false));
+        mvc.perform(
+                        patch("/music/admin/updateBannerStatus/1")
+                                .header("Authorization", token)
+                                .param("enabled", "true"))
+                .andExpect(status().isOk());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                0, jdbc.queryForObject("SELECT status FROM tb_banner WHERE id = 1", Integer.class));
+        mvc.perform(get("/music/public/banner/getBannerList"))
+                .andExpect(jsonPath("$.data[0].enabled").value(true));
+        mvc.perform(
+                        patch("/music/admin/updateBannerStatus/1")
+                                .header("Authorization", token)
+                                .param("enabled", "invalid"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -473,7 +534,7 @@ class MusicTest {
                                 .contentType("application/json")
                                 .content(
 """
-{"bannerStatus":"DISABLE"}
+{"enabled":false}
 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))

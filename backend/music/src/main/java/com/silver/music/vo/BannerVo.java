@@ -8,4 +8,6 @@ public class BannerVo {
     private Long bannerId;
 
     private String bannerUrl;
+
+    private boolean enabled;
 }

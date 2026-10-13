@@ -1,6 +1,6 @@
 package com.silver.music.controller;
 
-import com.silver.diary.common.Result;
+import com.silver.common.Result;
 import com.silver.music.service.PlaylistBindingService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;

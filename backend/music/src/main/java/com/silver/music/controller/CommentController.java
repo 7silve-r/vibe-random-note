@@ -1,6 +1,6 @@
 package com.silver.music.controller;
 
-import com.silver.diary.common.Result;
+import com.silver.common.Result;
 import com.silver.music.dto.CommentPlaylistDto;
 import com.silver.music.dto.CommentSongDto;
 import com.silver.music.service.CommentService;

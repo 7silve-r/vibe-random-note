@@ -4,8 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.silver.diary.utils.JwtUtil;
-import com.silver.music.service.MinioService;
+import com.silver.account.utils.JwtUtil;
+import com.silver.storage.model.UploadTarget;
+import com.silver.storage.service.FileStorage;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,7 +33,7 @@ class UploadHttpTest {
     @Value("${local.server.port}")
     int port;
 
-    @MockitoBean MinioService storage;
+    @MockitoBean FileStorage storage;
 
     @BeforeEach
     void setup() {
@@ -84,7 +85,7 @@ class UploadHttpTest {
 
     @Test
     void audio() throws Exception {
-        when(storage.uploadFile(any(), eq("songs")))
+        when(storage.upload(any(), eq(UploadTarget.SONG_AUDIO)))
                 .thenAnswer(
                         call -> {
                             org.springframework.web.multipart.MultipartFile file =
@@ -97,7 +98,7 @@ class UploadHttpTest {
         assertEquals(
                 "http://storage.invalid/test.mp3",
                 jdbc.queryForObject("SELECT audio_url FROM tb_song WHERE id = 901", String.class));
-        verify(storage).uploadFile(any(), eq("songs"));
+        verify(storage).upload(any(), eq(UploadTarget.SONG_AUDIO));
     }
 
     @Test

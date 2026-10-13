@@ -16,12 +16,12 @@ async function collect(song: any) {
   await ui.run(
     async () => {
       await api(
-        `/music/favorite/${song.favoriteStatus ? 'cancelCollectSong' : 'collectSong'}?songId=${song.songId}`,
-        song.favoriteStatus ? 'DELETE' : 'POST',
+        `/music/favorite/${song.collected ? 'cancelCollectSong' : 'collectSong'}?songId=${song.songId}`,
+        song.collected ? 'DELETE' : 'POST',
       );
       emit('refresh');
     },
-    song.favoriteStatus ? '已取消收藏' : '已收藏',
+    song.collected ? '已取消收藏' : '已收藏',
   );
 }
 </script>
@@ -36,8 +36,8 @@ async function collect(song: any) {
       ><small>{{ song.artistName || '未知歌手' }} · {{ song.album || '单曲' }}</small></RouterLink
     ><button :aria-label="'播放 ' + song.songName" @click="player.play(song, songs)">
       <Play :size="17" /></button
-    ><button :aria-label="song.favoriteStatus ? '取消收藏歌曲' : '收藏歌曲'" @click="collect(song)">
-      <Heart :size="17" :fill="song.favoriteStatus ? 'currentColor' : 'none'" />
+    ><button :aria-label="song.collected ? '取消收藏歌曲' : '收藏歌曲'" @click="collect(song)">
+      <Heart :size="17" :fill="song.collected ? 'currentColor' : 'none'" />
     </button>
   </div>
 </template>

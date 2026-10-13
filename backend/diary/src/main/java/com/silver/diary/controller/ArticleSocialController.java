@@ -1,6 +1,6 @@
 package com.silver.diary.controller;
 
-import com.silver.diary.common.*;
+import com.silver.common.*;
 import com.silver.diary.dto.ArticleCommentDto;
 import com.silver.diary.service.ArticleSocialService;
 import com.silver.diary.vo.*;

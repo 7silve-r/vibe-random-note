@@ -1,0 +1,28 @@
+-- Only creates missing tables. Run against a NEW music_diary database.
+CREATE DATABASE IF NOT EXISTS music_diary CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE music_diary;
+CREATE TABLE IF NOT EXISTS `user` (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(30) NOT NULL UNIQUE,
+  role VARCHAR(10) NOT NULL DEFAULT 'USER',
+  status INT NOT NULL DEFAULT 0,
+  token_version INT NOT NULL DEFAULT 0,
+  password VARCHAR(255) NOT NULL,
+  nickname VARCHAR(100),
+  email VARCHAR(254) UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  user_pic VARCHAR(512),
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS email_code (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(254) NOT NULL,
+  purpose VARCHAR(10) NOT NULL,
+  code VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  sent_at TIMESTAMP NOT NULL,
+  attempts INT NOT NULL DEFAULT 0,
+  UNIQUE (email, purpose)
+);

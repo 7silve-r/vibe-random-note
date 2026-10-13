@@ -1,7 +1,7 @@
 package com.silver.music.service;
 
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.silver.diary.common.PageResult;
+import com.silver.common.PageResult;
 import com.silver.music.dto.ArtistAddDto;
 import com.silver.music.dto.ArtistQueryDto;
 import com.silver.music.dto.ArtistUpdateDto;

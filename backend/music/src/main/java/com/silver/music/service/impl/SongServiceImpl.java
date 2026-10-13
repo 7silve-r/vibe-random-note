@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.common.PageResult;
-import com.silver.diary.exception.BusinessException;
-import com.silver.diary.utils.SecurityUtil;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.PageResult;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.AdminSongQueryDto;
 import com.silver.music.dto.SongAddDto;
 import com.silver.music.dto.SongQueryDto;
@@ -15,18 +15,17 @@ import com.silver.music.entity.Genre;
 import com.silver.music.entity.Song;
 import com.silver.music.entity.Style;
 import com.silver.music.entity.UserFavorite;
-import com.silver.music.enumeration.FavoriteStatus;
 import com.silver.music.mapper.CommentMapper;
 import com.silver.music.mapper.GenreMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.StyleMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
-import com.silver.music.service.MinioService;
 import com.silver.music.service.SongService;
-import com.silver.music.upload.UploadCleanup;
 import com.silver.music.vo.SongAdminVo;
 import com.silver.music.vo.SongDetailVo;
 import com.silver.music.vo.SongVo;
+import com.silver.storage.service.FileStorage;
+import com.silver.storage.support.UploadCleanup;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,7 +42,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
     @Autowired private UserFavoriteMapper userFavoriteMapper;
     @Autowired private StyleMapper styleMapper;
     @Autowired private GenreMapper genreMapper;
-    @Autowired private MinioService minioService;
+    @Autowired private FileStorage fileStorage;
 
     @Override
     public PageResult<SongVo> listSongs(SongQueryDto songDto) {
@@ -56,9 +55,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
                         page, songDto.getSongName(), songDto.getArtistName(), songDto.getAlbum());
 
         List<SongVo> songVoList =
-                songPage.getRecords().stream()
-                        .peek(songVo -> songVo.setFavoriteStatus(FavoriteStatus.NONE.getId()))
-                        .toList();
+                songPage.getRecords().stream().peek(songVo -> songVo.setCollected(false)).toList();
 
         if (userId != null) {
 
@@ -73,7 +70,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
 
             for (SongVo songVo : songVoList) {
                 if (favoriteSongIds.contains(songVo.getSongId())) {
-                    songVo.setFavoriteStatus(FavoriteStatus.SAVED.getId());
+                    songVo.setCollected(true);
                 }
             }
         }
@@ -149,7 +146,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         SongDetailVo songDetailVo = songMapper.getSongDetailById(songId);
         if (songDetailVo == null) throw new BusinessException(404, "歌曲不存在");
         songDetailVo.setComments(commentMapper.listByTarget(songId, 0));
-        songDetailVo.setFavoriteStatus(FavoriteStatus.NONE.getId());
+        songDetailVo.setCollected(false);
 
         Long userId = SecurityUtil.optionalUserId();
 
@@ -162,7 +159,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
                                     .eq(UserFavorite::getType, 0)
                                     .eq(UserFavorite::getSongId, songId));
             if (favoriteSong != null) {
-                songDetailVo.setFavoriteStatus(FavoriteStatus.SAVED.getId());
+                songDetailVo.setCollected(true);
             }
         }
 
@@ -256,7 +253,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
             throw new BusinessException("更新失败");
         }
 
-        UploadCleanup.afterCommit(minioService, cover);
+        UploadCleanup.afterCommit(fileStorage, cover);
     }
 
     @Override
@@ -272,7 +269,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
             throw new BusinessException("更新失败");
         }
 
-        UploadCleanup.afterCommit(minioService, audio);
+        UploadCleanup.afterCommit(fileStorage, audio);
     }
 
     @Override
@@ -286,10 +283,10 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         String audio = song.getAudioUrl();
 
         if (cover != null && !cover.isEmpty()) {
-            UploadCleanup.afterCommit(minioService, cover);
+            UploadCleanup.afterCommit(fileStorage, cover);
         }
         if (audio != null && !audio.isEmpty()) {
-            UploadCleanup.afterCommit(minioService, audio);
+            UploadCleanup.afterCommit(fileStorage, audio);
         }
 
         if (songMapper.deleteById(songId) == 0) {
@@ -314,10 +311,10 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
                         .toList();
 
         for (String coverUrl : coverUrlList) {
-            UploadCleanup.afterCommit(minioService, coverUrl);
+            UploadCleanup.afterCommit(fileStorage, coverUrl);
         }
         for (String audioUrl : audioUrlList) {
-            UploadCleanup.afterCommit(minioService, audioUrl);
+            UploadCleanup.afterCommit(fileStorage, audioUrl);
         }
 
         if (songMapper.deleteByIds(songIds) == 0) {

@@ -2,30 +2,26 @@ package com.silver.diary.support;
 
 import static org.mockito.Mockito.*;
 
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.silver.diary.entity.User;
-import com.silver.diary.service.UserService;
+import com.silver.account.utils.SecurityUtil;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class TestData {
     private TestData() {}
 
-    @SuppressWarnings("unchecked")
-    public static LambdaQueryChainWrapper<User> users(UserService service) {
-        LambdaQueryChainWrapper<User> query = mock(LambdaQueryChainWrapper.class);
-        doReturn(query).when(query).eq(any(), any());
-        when(service.lambdaQuery()).thenReturn(query);
-        return query;
-    }
-
-    public static User user() {
-        User user = new User();
-        user.setId(1);
-        user.setUsername("writer01");
-        return user;
+    public static void authenticate(Integer id) {
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        new SecurityUtil.Account(id, "writer" + id),
+                        null,
+                        AuthorityUtils.createAuthorityList("ROLE_USER")));
+        SecurityContextHolder.setContext(context);
     }
 
     public static MockMultipartFile png() throws Exception {

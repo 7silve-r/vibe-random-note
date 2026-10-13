@@ -27,7 +27,7 @@ public class SongDetailVo {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate releaseTime;
 
-    private Integer favoriteStatus = 0;
+    private boolean collected;
 
     private List<CommentVo> comments;
 }

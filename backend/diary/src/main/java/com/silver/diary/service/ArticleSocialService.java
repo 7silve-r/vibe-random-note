@@ -1,6 +1,6 @@
 package com.silver.diary.service;
 
-import com.silver.diary.common.PageResult;
+import com.silver.common.PageResult;
 import com.silver.diary.vo.ArticleCommentVo;
 import com.silver.diary.vo.ArticleVo;
 

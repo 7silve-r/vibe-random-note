@@ -219,10 +219,7 @@ async function status(row: any) {
     if (tab.value === 'users')
       await api(`/admin/users/${row.id}/status?status=${row.status === 0 ? 1 : 0}`, 'PATCH');
     else
-      await api(
-        `/music/admin/updateBannerStatus/${row.bannerId}?status=${row.bannerStatus === 'ENABLE' || row.bannerStatus === 0 ? 1 : 0}`,
-        'PATCH',
-      );
+      await api(`/music/admin/updateBannerStatus/${row.bannerId}?enabled=${!row.enabled}`, 'PATCH');
     await load();
   }, '状态已更新');
 }
@@ -399,11 +396,13 @@ watch(
                   />
                 </td>
                 <td>
-                  <SmartImage
-                    v-if="tab === 'banners'"
-                    :src="row.bannerUrl"
-                    style="width: 150px; height: 65px; border-radius: 8px"
-                  /><template v-else
+                  <template v-if="tab === 'banners'">
+                    <SmartImage
+                      :src="row.bannerUrl"
+                      style="width: 150px; height: 65px; border-radius: 8px"
+                    />
+                    <small>{{ row.enabled ? '已启用' : '已停用' }}</small> </template
+                  ><template v-else
                     ><RouterLink v-if="tab === 'diary'" :to="'/diary/' + row.id">{{
                       row.title
                     }}</RouterLink
@@ -411,8 +410,7 @@ watch(
                     ><small v-if="row.artistName && tab === 'songs'">{{ row.artistName }}</small
                     ><small v-if="tab === 'users'">{{
                       row.role === 'ADMIN' ? '管理员' : row.status === 0 ? '正常' : '已停用'
-                    }}</small
-                    ><small v-if="tab === 'banners'">{{ row.bannerStatus }}</small></template
+                    }}</small></template
                   >
                 </td>
                 <td>
@@ -439,7 +437,7 @@ watch(
                           ? row.status === 0
                             ? '停用'
                             : '启用'
-                          : row.bannerStatus === 'ENABLE' || row.bannerStatus === 0
+                          : row.enabled
                             ? '停用'
                             : '启用'
                       }}</button

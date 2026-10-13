@@ -1,7 +1,7 @@
 package com.silver.music.controller;
 
-import com.silver.diary.common.PageResult;
-import com.silver.diary.common.Result;
+import com.silver.common.PageResult;
+import com.silver.common.Result;
 import com.silver.music.dto.SongQueryDto;
 import com.silver.music.service.SongService;
 import com.silver.music.vo.SongDetailVo;

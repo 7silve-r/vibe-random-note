@@ -39,7 +39,6 @@ jwt:
   expiration: 86400000
 
 file:
-  upload-dir: ${UPLOAD_DIR:./uploads/}
   access-url-prefix: ${UPLOAD_URL_PREFIX:/uploads/}
 
 minio:
@@ -47,3 +46,4 @@ minio:
   accessKey: ${MINIO_ACCESS_KEY}
   secretKey: ${MINIO_SECRET_KEY}
   bucket: ${MINIO_BUCKET:vibe-music-data}
+  private-bucket: ${MINIO_PRIVATE_BUCKET:vibe-diary-private}

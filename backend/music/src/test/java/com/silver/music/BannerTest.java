@@ -3,11 +3,11 @@ package com.silver.music;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.silver.diary.exception.BusinessException;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.entity.Banner;
 import com.silver.music.mapper.BannerMapper;
-import com.silver.music.service.MinioService;
 import com.silver.music.service.impl.BannerServiceImpl;
+import com.silver.storage.service.FileStorage;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -17,10 +17,10 @@ class BannerTest {
     @Test
     void rollback() {
         BannerMapper mapper = mock(BannerMapper.class);
-        MinioService storage = mock(MinioService.class);
+        FileStorage storage = mock(FileStorage.class);
         BannerServiceImpl service = new BannerServiceImpl();
         ReflectionTestUtils.setField(service, "bannerMapper", mapper);
-        ReflectionTestUtils.setField(service, "minioService", storage);
+        ReflectionTestUtils.setField(service, "fileStorage", storage);
         Banner banner = new Banner();
         banner.setBannerUrl("http://localhost/image.png");
         when(mapper.selectByIds(List.of(1L))).thenReturn(List.of(banner));

@@ -104,8 +104,8 @@ async function favorite() {
   await ui.run(async () => {
     const type = kind.value === 'song' ? 'Song' : 'Playlist';
     await api(
-      `/music/favorite/${detail.value.favoriteStatus ? 'cancelCollect' : 'collect'}${type}?${kind.value}Id=${id.value}`,
-      detail.value.favoriteStatus ? 'DELETE' : 'POST',
+      `/music/favorite/${detail.value.collected ? 'cancelCollect' : 'collect'}${type}?${kind.value}Id=${id.value}`,
+      detail.value.collected ? 'DELETE' : 'POST',
     );
     await load();
   }, '收藏已更新');
@@ -165,7 +165,7 @@ ui.run(async () => {
           >
             播放{{ kind === 'song' ? '' : '全部' }}</button
           ><button v-if="kind !== 'artist'" @click="favorite">
-            {{ detail.favoriteStatus ? '取消收藏' : '收藏' }}
+            {{ detail.collected ? '取消收藏' : '收藏' }}
           </button>
         </div>
       </div>

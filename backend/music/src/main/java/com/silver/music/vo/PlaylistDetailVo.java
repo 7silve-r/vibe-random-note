@@ -16,7 +16,7 @@ public class PlaylistDetailVo {
 
     private List<SongVo> songs;
 
-    private Integer favoriteStatus = 0;
+    private boolean collected;
 
     private List<CommentVo> comments;
 }

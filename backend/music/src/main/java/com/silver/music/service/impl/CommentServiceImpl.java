@@ -2,8 +2,8 @@ package com.silver.music.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.exception.BusinessException;
-import com.silver.diary.utils.SecurityUtil;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.*;
 import com.silver.music.entity.*;
 import com.silver.music.mapper.*;

@@ -1,6 +1,5 @@
 package com.silver.music.dto;
 
-import com.silver.music.enumeration.BannerStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -18,5 +17,5 @@ public class BannerQueryDto {
     @Max(100)
     private Integer pageSize = 10;
 
-    private BannerStatus bannerStatus;
+    private Boolean enabled;
 }

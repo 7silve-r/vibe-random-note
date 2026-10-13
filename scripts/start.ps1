@@ -46,9 +46,6 @@ try {
         Write-Host 'Building backend...'
         Push-Location $backend
         try { & $maven '-q' '-DskipTests' 'package'; if ($LASTEXITCODE -ne 0) { throw 'Backend build failed.' } } finally { Pop-Location }
-        # Resolve uploads against the project root for the same location on every launch.
-        $uploadDir = Get-Setting 'UPLOAD_DIR' './uploads/'
-        if (![IO.Path]::IsPathRooted($uploadDir)) { $env:UPLOAD_DIR = [IO.Path]::GetFullPath((Join-Path $ProjectRoot $uploadDir)) }
         $jar = Join-Path $backend 'app/target/vibe-backend.jar'
         $running['backend'] = Start-Owned 'backend' $java @('-jar', ('"' + $jar + '"')) $ProjectRoot
         $started.Add('backend')

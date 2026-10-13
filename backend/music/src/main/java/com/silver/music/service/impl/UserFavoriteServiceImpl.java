@@ -4,13 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.common.PageResult;
-import com.silver.diary.exception.BusinessException;
-import com.silver.diary.utils.SecurityUtil;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.PageResult;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.PlaylistQueryDto;
 import com.silver.music.dto.SongQueryDto;
 import com.silver.music.entity.UserFavorite;
-import com.silver.music.enumeration.FavoriteStatus;
 import com.silver.music.mapper.PlaylistMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
@@ -52,9 +51,7 @@ public class UserFavoriteServiceImpl extends ServiceImpl<UserFavoriteMapper, Use
                         songDto.getAlbum());
 
         List<SongVo> songVoList =
-                songPage.getRecords().stream()
-                        .peek(songVo -> songVo.setFavoriteStatus(FavoriteStatus.SAVED.getId()))
-                        .toList();
+                songPage.getRecords().stream().peek(songVo -> songVo.setCollected(true)).toList();
 
         return new PageResult<>(songPage.getTotal(), songVoList);
     }

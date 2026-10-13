@@ -3,28 +3,31 @@ package com.silver.diary.controller;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.silver.common.exception.BusinessException;
 import com.silver.diary.dto.ArticleDto;
 import com.silver.diary.entity.*;
-import com.silver.diary.exception.BusinessException;
 import com.silver.diary.service.*;
+import com.silver.diary.support.TestData;
 import com.silver.diary.upload.*;
+import com.silver.storage.model.UploadResult;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class ArticleControllerTest {
     ArticleService articles;
     CategoryService categories;
-    UploadService uploads;
+    DiaryUploadService uploads;
     ArticleController controller;
 
     @BeforeEach
     void setup() {
+        TestData.authenticate(1);
         articles = mock(ArticleService.class);
         categories = mock(CategoryService.class);
-        uploads = mock(UploadService.class);
-        controller = spy(new ArticleController());
-        doReturn(1).when(controller).currentUserId("token");
+        uploads = mock(DiaryUploadService.class);
+        controller = new ArticleController();
         ReflectionTestUtils.setField(controller, "articleService", articles);
         ReflectionTestUtils.setField(controller, "categoryService", categories);
         ReflectionTestUtils.setField(controller, "uploadService", uploads);
@@ -32,6 +35,11 @@ class ArticleControllerTest {
         category.setId(7);
         category.setCreateUser(1);
         when(categories.getById(7)).thenReturn(category);
+    }
+
+    @AfterEach
+    void cleanup() {
+        SecurityContextHolder.clearContext();
     }
 
     ArticleDto draft() {
@@ -55,7 +63,7 @@ class ArticleControllerTest {
     @Test
     void publish() throws Exception {
         when(uploads.article(any(Article.class), isNull())).thenReturn(new UploadResult(null));
-        assertEquals(200, controller.publish(draft(), "token").getCode());
+        assertEquals(200, controller.publish(draft()).getCode());
         var saved = ArgumentCaptor.forClass(Article.class);
         verify(uploads).article(saved.capture(), isNull());
         assertEquals(1, saved.getValue().getCreateUser());
@@ -66,7 +74,7 @@ class ArticleControllerTest {
     void badTitle() {
         var dto = draft();
         dto.setTitle(" ");
-        assertThrows(BusinessException.class, () -> controller.publish(dto, "token"));
+        assertThrows(BusinessException.class, () -> controller.publish(dto));
         verifyNoInteractions(uploads);
     }
 
@@ -74,7 +82,7 @@ class ArticleControllerTest {
     void badState() {
         var dto = draft();
         dto.setState("草稿");
-        assertThrows(BusinessException.class, () -> controller.publish(dto, "token"));
+        assertThrows(BusinessException.class, () -> controller.publish(dto));
         verifyNoInteractions(uploads);
     }
 
@@ -84,34 +92,34 @@ class ArticleControllerTest {
         category.setId(7);
         category.setCreateUser(2);
         when(categories.getById(7)).thenReturn(category);
-        assertThrows(BusinessException.class, () -> controller.publish(draft(), "token"));
+        assertThrows(BusinessException.class, () -> controller.publish(draft()));
         verifyNoInteractions(uploads);
     }
 
     @Test
     void foreignRead() {
         stored(2);
-        assertThrows(BusinessException.class, () -> controller.detail(10, "token"));
+        assertThrows(BusinessException.class, () -> controller.detail(10));
     }
 
     @Test
     void foreignEdit() {
         stored(2);
-        assertThrows(BusinessException.class, () -> controller.update(draft(), 10, "token"));
+        assertThrows(BusinessException.class, () -> controller.update(draft(), 10));
         verifyNoInteractions(uploads);
     }
 
     @Test
     void foreignDelete() {
         stored(2);
-        assertThrows(BusinessException.class, () -> controller.delete(10, "token"));
+        assertThrows(BusinessException.class, () -> controller.delete(10));
         verify(articles, never()).removeById(anyInt());
     }
 
     @Test
     void keepCover() throws Exception {
         var article = stored(1);
-        controller.update(draft(), 10, "token");
+        controller.update(draft(), 10);
         assertEquals("/uploads/covers/old.png", article.getCoverImg());
         verify(uploads).article(article, null);
     }
@@ -120,12 +128,12 @@ class ArticleControllerTest {
     void deleteOk() {
         stored(1);
         when(articles.removeById(10)).thenReturn(true);
-        assertEquals(200, controller.delete(10, "token").getCode());
+        assertEquals(200, controller.delete(10).getCode());
     }
 
     @Test
     void deleteFail() {
         stored(1);
-        assertThrows(BusinessException.class, () -> controller.delete(10, "token"));
+        assertThrows(BusinessException.class, () -> controller.delete(10));
     }
 }

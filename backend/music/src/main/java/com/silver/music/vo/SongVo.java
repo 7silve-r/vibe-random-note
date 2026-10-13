@@ -21,7 +21,7 @@ public class SongVo {
 
     private String audioUrl;
 
-    private Integer favoriteStatus = 0;
+    private boolean collected;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate releaseTime;

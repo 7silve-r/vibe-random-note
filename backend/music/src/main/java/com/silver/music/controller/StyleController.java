@@ -1,7 +1,7 @@
 package com.silver.music.controller;
 
-import com.silver.diary.common.Result;
-import com.silver.diary.exception.BusinessException;
+import com.silver.common.Result;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.entity.Style;
 import com.silver.music.service.StyleService;
 import java.util.List;

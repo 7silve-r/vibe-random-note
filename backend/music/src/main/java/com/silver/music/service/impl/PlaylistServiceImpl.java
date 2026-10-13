@@ -4,25 +4,24 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.silver.diary.common.PageResult;
-import com.silver.diary.exception.BusinessException;
-import com.silver.diary.utils.SecurityUtil;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.PageResult;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.PlaylistAddDto;
 import com.silver.music.dto.PlaylistQueryDto;
 import com.silver.music.dto.PlaylistUpdateDto;
 import com.silver.music.entity.Playlist;
 import com.silver.music.entity.UserFavorite;
-import com.silver.music.enumeration.FavoriteStatus;
 import com.silver.music.mapper.CommentMapper;
 import com.silver.music.mapper.PlaylistMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
-import com.silver.music.service.MinioService;
 import com.silver.music.service.PlaylistService;
-import com.silver.music.upload.UploadCleanup;
 import com.silver.music.vo.PlaylistDetailVo;
 import com.silver.music.vo.PlaylistVo;
 import com.silver.music.vo.SongVo;
+import com.silver.storage.service.FileStorage;
+import com.silver.storage.support.UploadCleanup;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +39,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
     @Autowired private SongMapper songMapper;
     @Autowired private CommentMapper commentMapper;
     @Autowired private UserFavoriteMapper userFavoriteMapper;
-    @Autowired private MinioService minioService;
+    @Autowired private FileStorage fileStorage;
 
     @Override
     public PageResult<PlaylistVo> listPlaylists(PlaylistQueryDto playlistDto) {
@@ -147,8 +146,8 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
         List<SongVo> songVoList = songMapper.listByPlaylist(playlistId);
         playlistDetailVo.setSongs(songVoList);
         playlistDetailVo.setComments(commentMapper.listByTarget(playlistId, 1));
-        songVoList.forEach(songVo -> songVo.setFavoriteStatus(FavoriteStatus.NONE.getId()));
-        playlistDetailVo.setFavoriteStatus(FavoriteStatus.NONE.getId());
+        songVoList.forEach(songVo -> songVo.setCollected(false));
+        playlistDetailVo.setCollected(false);
 
         Long userId = SecurityUtil.optionalUserId();
 
@@ -161,7 +160,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
                                     .eq(UserFavorite::getType, 1)
                                     .eq(UserFavorite::getPlaylistId, playlistId));
             if (favoritePlaylist != null) {
-                playlistDetailVo.setFavoriteStatus(FavoriteStatus.SAVED.getId());
+                playlistDetailVo.setCollected(true);
             }
 
             List<UserFavorite> favoriteSongs =
@@ -175,7 +174,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
 
             for (SongVo songVo : songVoList) {
                 if (favoriteSongIds.contains(songVo.getSongId())) {
-                    songVo.setFavoriteStatus(FavoriteStatus.SAVED.getId());
+                    songVo.setCollected(true);
                 }
             }
         }
@@ -239,7 +238,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
             throw new BusinessException("更新失败");
         }
 
-        UploadCleanup.afterCommit(minioService, cover);
+        UploadCleanup.afterCommit(fileStorage, cover);
     }
 
     @Override
@@ -253,7 +252,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
         String coverUrl = playlist.getCoverUrl();
 
         if (coverUrl != null && !coverUrl.isEmpty()) {
-            UploadCleanup.afterCommit(minioService, coverUrl);
+            UploadCleanup.afterCommit(fileStorage, coverUrl);
         }
 
         if (playlistMapper.deleteById(playlistId) == 0) {
@@ -272,7 +271,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist>
                         .toList();
 
         for (String coverUrl : coverUrlList) {
-            UploadCleanup.afterCommit(minioService, coverUrl);
+            UploadCleanup.afterCommit(fileStorage, coverUrl);
         }
 
         if (playlistMapper.deleteByIds(playlistIds) == 0) {

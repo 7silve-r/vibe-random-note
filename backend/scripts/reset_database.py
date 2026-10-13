@@ -7,7 +7,7 @@ import subprocess
 import sys
 from urllib.parse import urlparse
 
-parser = argparse.ArgumentParser(description="重建本机随心记项目表；默认只检查，--apply 才会执行。")
+parser = argparse.ArgumentParser(description="重建本机VIBE_RANDOM_NOTE项目表；默认只检查，--apply 才会执行。")
 parser.add_argument("--database", required=True)
 parser.add_argument("--apply", action="store_true")
 args = parser.parse_args()
@@ -69,7 +69,7 @@ if not args.apply:
     sys.exit(0)
 
 sql = "SET FOREIGN_KEY_CHECKS=0;\n" + "\n".join("DROP TABLE IF EXISTS `" + table + "`;" for table in known)
-for file in [base / "diary/sql/schema.sql", base / "music/sql/schema.sql"]:
+for file in [base / "account/sql/schema.sql", base / "diary/sql/schema.sql", base / "music/sql/schema.sql"]:
     schema = file.read_text(encoding="utf-8")
     schema = re.sub(r"(?m)^CREATE DATABASE[^;]*;|^USE [^;]*;", "", schema)
     sql += "\n" + schema

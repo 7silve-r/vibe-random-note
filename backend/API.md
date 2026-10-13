@@ -1,13 +1,5 @@
 # 后端接口清单
 
-统一返回 `{ "code": 200, "message": "...", "data": ... }`；失败通过全局异常处理，HTTP 状态与 code 一致。分页 data 使用 total 和 list。
-
-日记发布和修改使用 multipart/form-data，字段 title、cateId、content、state、file；file 可选。state 必须为“私有”或“公开”。登录和注册请求字段保持原 diary DTO。
-
-邮箱验证码：POST /api/email/code，JSON 为 email 和 purpose（bind 或 reset）；bind 用途需登录。绑定 POST /my/email，JSON 为 email 和 code；重置 POST /api/password/reset，JSON 为 email、code、newPwd、reNewPwd。
-
-下表列出实际映射。音乐业务路径统一以 /music 开头；不再使用原音乐的 /user/login 或 /admin/login。具体 JSON 字段见对应 dto 文件，文件上传见 Controller 的 @RequestParam。
-
 | 模块 / 控制器 | 方法 | 路径 | Java 方法 |
 | --- | --- | --- | --- |
 | diary/AdminUserController | GET | `/admin/users` | list |
@@ -107,4 +99,3 @@
 | music/UserFavoriteController | POST | `/music/favorite/collectPlaylist` | collectPlaylist |
 | music/UserFavoriteController | DELETE | `/music/favorite/cancelCollectPlaylist` | cancelCollectPlaylist |
 
-歌曲和歌单的 `favoriteStatus` 为收藏状态（0 未收藏，1 已收藏）；评论的 `likeCount` 为点赞数。空分页始终返回数组 `list: []`，保留符合筛选条件的 `total`。

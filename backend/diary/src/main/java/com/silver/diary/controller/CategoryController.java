@@ -1,54 +1,37 @@
 package com.silver.diary.controller;
 
-import com.silver.diary.common.Result;
+import com.silver.account.utils.SecurityUtil;
+import com.silver.common.Result;
+import com.silver.common.exception.BusinessException;
 import com.silver.diary.entity.Article;
 import com.silver.diary.entity.Category;
-import com.silver.diary.entity.User;
-import com.silver.diary.exception.BusinessException;
 import com.silver.diary.service.ArticleService;
 import com.silver.diary.service.CategoryService;
-import com.silver.diary.service.UserService;
-import com.silver.diary.utils.JwtUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @PreAuthorize("hasRole('USER')")
 @RestController
 @RequestMapping("/my/categories")
 public class CategoryController {
     @Autowired private CategoryService categoryService;
-    @Autowired private UserService userService;
-    @Autowired private JwtUtil jwtUtil;
     @Autowired private ArticleService articleService;
 
     @GetMapping
-    public Result<List<Category>> list(@RequestHeader("Authorization") String token) {
-        User user =
-                userService.lambdaQuery().eq(User::getUsername, jwtUtil.getUsername(token)).one();
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在，请重新登录");
-        }
-        Integer userId = user.getId();
+    public Result<List<Category>> list() {
+        Integer userId = SecurityUtil.userId();
         return Result.success(
                 categoryService.lambdaQuery().eq(Category::getCreateUser, userId).list());
     }
 
     @PostMapping
-    public Result<Void> add(
-            @RequestBody Category category, @RequestHeader("Authorization") String token) {
+    public Result<Void> add(@RequestBody Category category) {
         if (!valid(category)) throw new BusinessException("分类名称和别名须为1到50字");
         category.setId(null);
-        String username = jwtUtil.getUsername(token);
-        User user = userService.lambdaQuery().eq(User::getUsername, username).one();
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在，请重新登陆");
-        }
-        category.setCreateUser(user.getId());
+        category.setCreateUser(SecurityUtil.userId());
         category.setCreateTime(LocalDateTime.now());
         category.setUpdateTime(LocalDateTime.now());
         if (!categoryService.save(category)) {
@@ -58,16 +41,10 @@ public class CategoryController {
     }
 
     @PutMapping
-    public Result<Void> update(
-            @RequestBody Category category, @RequestHeader("Authorization") String token) {
+    public Result<Void> update(@RequestBody Category category) {
+        Integer userId = SecurityUtil.userId();
         Category existing =
                 category.getId() == null ? null : categoryService.getById(category.getId());
-        User user =
-                userService.lambdaQuery().eq(User::getUsername, jwtUtil.getUsername(token)).one();
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在，请重新登录");
-        }
-        Integer userId = user.getId();
         if (existing == null || !userId.equals(existing.getCreateUser())) {
             throw new BusinessException("分类不存在或无权访问");
         }
@@ -85,15 +62,9 @@ public class CategoryController {
     }
 
     @DeleteMapping
-    public Result<Void> delete(
-            @RequestParam Integer id, @RequestHeader("Authorization") String token) {
+    public Result<Void> delete(@RequestParam Integer id) {
+        Integer userId = SecurityUtil.userId();
         Category existing = categoryService.getById(id);
-        User user =
-                userService.lambdaQuery().eq(User::getUsername, jwtUtil.getUsername(token)).one();
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在，请重新登录");
-        }
-        Integer userId = user.getId();
         if (existing == null || !userId.equals(existing.getCreateUser())) {
             throw new BusinessException("分类不存在或无权访问");
         }

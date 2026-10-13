@@ -5,7 +5,7 @@ const song = {
   artistName: '测试歌手',
   album: '晴天',
   audioUrl: 'http://127.0.0.1:5173/test.wav',
-  favoriteStatus: 0,
+  collected: false,
 };
 const user = { id: 1, username: 'ADMIN', nickname: '管理员', role: 'ADMIN' };
 async function setup(page: Page, login = false) {
@@ -191,6 +191,34 @@ test('admin upload', async ({ page }) => {
   await page.getByRole('button', { name: '删除', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '请确认' })).toBeVisible();
   await page.getByRole('button', { name: '取消', exact: true }).click();
+});
+
+test('boolean banner status', async ({ page }) => {
+  await setup(page, true);
+  let enabled = true;
+  await page.route('**/backend/music/admin/listBanners', (route) =>
+    route.fulfill({
+      json: {
+        code: 200,
+        data: { list: [{ bannerId: 1, bannerUrl: '/banner.png', enabled }], total: 1 },
+      },
+    }),
+  );
+  await page.route('**/backend/music/admin/updateBannerStatus/1?*', async (route) => {
+    enabled = new URL(route.request().url()).searchParams.get('enabled') === 'true';
+    await route.fulfill({ json: { code: 200 } });
+  });
+  await page.goto('/admin');
+  await page.getByRole('button', { name: '轮播图管理', exact: true }).click();
+  await expect(page.getByText('已启用', { exact: true })).toBeVisible();
+  const disable = page.waitForRequest((r) =>
+    r.url().includes('updateBannerStatus/1?enabled=false'),
+  );
+  await page.getByRole('button', { name: '停用', exact: true }).click();
+  expect((await disable).method()).toBe('PATCH');
+  await expect(page.getByText('已停用', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '启用', exact: true }).click();
+  await expect(page.getByText('已启用', { exact: true })).toBeVisible();
 });
 
 test('sidebar and states', async ({ page }) => {

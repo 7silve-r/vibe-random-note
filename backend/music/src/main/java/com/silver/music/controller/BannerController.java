@@ -1,9 +1,8 @@
 package com.silver.music.controller;
 
-import com.silver.diary.common.PageResult;
-import com.silver.diary.common.Result;
+import com.silver.common.PageResult;
+import com.silver.common.Result;
 import com.silver.music.dto.BannerQueryDto;
-import com.silver.music.entity.Banner;
 import com.silver.music.service.BannerService;
 import com.silver.music.vo.BannerVo;
 import jakarta.validation.Valid;
@@ -19,15 +18,15 @@ public class BannerController {
 
     @PostMapping("/music/admin/listBanners")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<PageResult<Banner>> listBanners(@RequestBody @Valid BannerQueryDto bannerDto) {
+    public Result<PageResult<BannerVo>> listBanners(@RequestBody @Valid BannerQueryDto bannerDto) {
         return Result.success(bannerService.listBanners(bannerDto));
     }
 
     @PatchMapping("/music/admin/updateBannerStatus/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateBannerStatus(
-            @PathVariable("id") Long bannerId, @RequestParam("status") Integer bannerStatus) {
-        bannerService.updateBannerStatus(bannerId, bannerStatus);
+            @PathVariable("id") Long bannerId, @RequestParam("enabled") boolean enabled) {
+        bannerService.updateBannerStatus(bannerId, enabled);
         return Result.success();
     }
 
