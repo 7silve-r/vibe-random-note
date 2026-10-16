@@ -11,6 +11,11 @@
     <dependencies>
         <dependency>
             <groupId>com.silver</groupId>
+            <artifactId>poetry</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.silver</groupId>
             <artifactId>common</artifactId>
             <version>${project.version}</version>
         </dependency>

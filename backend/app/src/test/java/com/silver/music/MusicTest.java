@@ -31,11 +31,11 @@ class MusicTest {
     @BeforeEach
     void setup() {
         jdbc.update(
-                "INSERT INTO `user` (id, username, role) VALUES (1, 'writer01', 'USER'), (2, 'ADMIN', 'ADMIN')");
-        jdbc.update("INSERT INTO tb_artist (id, name) VALUES (1, '歌手')");
+                "INSERT INTO `account_user` (id, username, role) VALUES (1, 'writer01', 'USER'), (2, 'ADMIN', 'ADMIN')");
+        jdbc.update("INSERT INTO music_artist (id, name) VALUES (1, '歌手')");
         jdbc.update(
-                "INSERT INTO tb_song (id, name, artist_id, album, release_time) VALUES (1, '歌曲', 1, '专辑', CURRENT_DATE)");
-        jdbc.update("INSERT INTO tb_playlist (id, title) VALUES (1, '歌单')");
+                "INSERT INTO music_song (id, name, artist_id, album, release_time) VALUES (1, '歌曲', 1, '专辑', CURRENT_DATE)");
+        jdbc.update("INSERT INTO music_playlist (id, title) VALUES (1, '歌单')");
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
@@ -98,13 +98,13 @@ class MusicTest {
                                     .header("Authorization", jwt.generateToken("writer01")))
                     .andExpect(status().isOk());
         org.junit.jupiter.api.Assertions.assertEquals(
-                1, jdbc.queryForObject("SELECT COUNT(*) FROM tb_user_favorite", Integer.class));
+                1, jdbc.queryForObject("SELECT COUNT(*) FROM music_user_favorite", Integer.class));
     }
 
     @Test
     void commentLikes() throws Exception {
         jdbc.update(
-                "INSERT INTO tb_comment (id, user_id, song_id, content, create_time, type, like_count) VALUES (10, 1, 1, 'hi', CURRENT_TIMESTAMP, 0, 0)");
+                "INSERT INTO music_comment (id, user_id, song_id, content, create_time, type, like_count) VALUES (10, 1, 1, 'hi', CURRENT_TIMESTAMP, 0, 0)");
         for (int i = 0; i < 2; i++)
             mvc.perform(
                             patch("/music/comment/likeComment/10")
@@ -113,7 +113,7 @@ class MusicTest {
         org.junit.jupiter.api.Assertions.assertEquals(
                 1,
                 jdbc.queryForObject(
-                        "SELECT like_count FROM tb_comment WHERE id = 10", Integer.class));
+                        "SELECT like_count FROM music_comment WHERE id = 10", Integer.class));
         for (int i = 0; i < 2; i++)
             mvc.perform(
                             patch("/music/comment/cancelLikeComment/10")
@@ -122,13 +122,13 @@ class MusicTest {
         org.junit.jupiter.api.Assertions.assertEquals(
                 0,
                 jdbc.queryForObject(
-                        "SELECT like_count FROM tb_comment WHERE id = 10", Integer.class));
+                        "SELECT like_count FROM music_comment WHERE id = 10", Integer.class));
     }
 
     @Test
     void foreignComment() throws Exception {
         jdbc.update(
-                "INSERT INTO tb_comment (id, user_id, song_id, content, create_time, type, like_count) VALUES (10, 2, 1, 'hi', CURRENT_TIMESTAMP, 0, 0)");
+                "INSERT INTO music_comment (id, user_id, song_id, content, create_time, type, like_count) VALUES (10, 2, 1, 'hi', CURRENT_TIMESTAMP, 0, 0)");
         mvc.perform(
                         delete("/music/comment/deleteComment/10")
                                 .header("Authorization", jwt.generateToken("writer01")))
@@ -164,7 +164,7 @@ class MusicTest {
     @Test
     void favoritePage() throws Exception {
         jdbc.update(
-                "INSERT INTO tb_user_favorite (user_id, song_id, type, create_time) VALUES (1,1,0,CURRENT_TIMESTAMP), (2,1,0,CURRENT_TIMESTAMP)");
+                "INSERT INTO music_user_favorite (user_id, song_id, type, create_time) VALUES (1,1,0,CURRENT_TIMESTAMP), (2,1,0,CURRENT_TIMESTAMP)");
         mvc.perform(
                         post("/music/favorite/getFavoriteSongs")
                                 .header("Authorization", jwt.generateToken("writer01"))
@@ -206,7 +206,8 @@ class MusicTest {
                                 .content("[999]"))
                 .andExpect(status().isNotFound());
         org.junit.jupiter.api.Assertions.assertEquals(
-                1, jdbc.queryForObject("SELECT COUNT(*) FROM tb_playlist_binding", Integer.class));
+                1,
+                jdbc.queryForObject("SELECT COUNT(*) FROM music_playlist_binding", Integer.class));
     }
 
     @Test
@@ -219,7 +220,7 @@ class MusicTest {
                                         "{\"artistId\":1,\"songName\":\"新歌\",\"album\":\"专辑\",\"releaseTime\":\"2026-10-03\"}"))
                 .andExpect(status().isOk());
         org.junit.jupiter.api.Assertions.assertEquals(
-                2, jdbc.queryForObject("SELECT COUNT(*) FROM tb_song", Integer.class));
+                2, jdbc.queryForObject("SELECT COUNT(*) FROM music_song", Integer.class));
     }
 
     @Test
@@ -275,7 +276,8 @@ class MusicTest {
 
     @Test
     void booleanBannerState() throws Exception {
-        jdbc.update("INSERT INTO tb_banner (id, banner_url, status) VALUES (1, '/banner.png', 0)");
+        jdbc.update(
+                "INSERT INTO music_banner (id, banner_url, status) VALUES (1, '/banner.png', 0)");
         String token = jwt.generateToken("ADMIN");
         mvc.perform(
                         post("/music/admin/listBanners")
@@ -291,7 +293,8 @@ class MusicTest {
                                 .param("enabled", "false"))
                 .andExpect(status().isOk());
         org.junit.jupiter.api.Assertions.assertEquals(
-                1, jdbc.queryForObject("SELECT status FROM tb_banner WHERE id = 1", Integer.class));
+                1,
+                jdbc.queryForObject("SELECT status FROM music_banner WHERE id = 1", Integer.class));
         mvc.perform(get("/music/public/banner/getBannerList"))
                 .andExpect(jsonPath("$.data").isEmpty());
         mvc.perform(
@@ -306,7 +309,8 @@ class MusicTest {
                                 .param("enabled", "true"))
                 .andExpect(status().isOk());
         org.junit.jupiter.api.Assertions.assertEquals(
-                0, jdbc.queryForObject("SELECT status FROM tb_banner WHERE id = 1", Integer.class));
+                0,
+                jdbc.queryForObject("SELECT status FROM music_banner WHERE id = 1", Integer.class));
         mvc.perform(get("/music/public/banner/getBannerList"))
                 .andExpect(jsonPath("$.data[0].enabled").value(true));
         mvc.perform(
@@ -329,8 +333,8 @@ class MusicTest {
 
     @Test
     void recommendStyle() throws Exception {
-        jdbc.update("UPDATE tb_playlist SET style = '轻音乐' WHERE id = 1");
-        jdbc.update("INSERT INTO tb_playlist (id, title, style) VALUES (2, '同风格', '轻音乐')");
+        jdbc.update("UPDATE music_playlist SET style = '轻音乐' WHERE id = 1");
+        jdbc.update("INSERT INTO music_playlist (id, title, style) VALUES (2, '同风格', '轻音乐')");
         mvc.perform(
                         post("/music/favorite/collectPlaylist")
                                 .param("playlistId", "1")
@@ -345,8 +349,8 @@ class MusicTest {
 
     @Test
     void noArtists() throws Exception {
-        jdbc.update("DELETE FROM tb_song");
-        jdbc.update("DELETE FROM tb_artist");
+        jdbc.update("DELETE FROM music_song");
+        jdbc.update("DELETE FROM music_artist");
         mvc.perform(
                         get("/music/admin/listArtistNames")
                                 .header("Authorization", jwt.generateToken("ADMIN")))
@@ -357,9 +361,9 @@ class MusicTest {
 
     @Test
     void allStyles() throws Exception {
-        jdbc.update("UPDATE tb_playlist SET style = '流行' WHERE id = 1");
+        jdbc.update("UPDATE music_playlist SET style = '流行' WHERE id = 1");
         jdbc.update(
-                "INSERT INTO tb_playlist (id, title, style) VALUES (2, '摇滚歌单', '摇滚'), (3, '未分类', NULL)");
+                "INSERT INTO music_playlist (id, title, style) VALUES (2, '摇滚歌单', '摇滚'), (3, '未分类', NULL)");
         for (String style : new String[] {"null", "\"\"", "\"   \""}) {
             String body = "{\"pageNum\":1,\"pageSize\":10,\"style\":" + style + "}";
             mvc.perform(
@@ -389,13 +393,14 @@ class MusicTest {
     @Test
     void details() throws Exception {
         jdbc.update(
-                "INSERT INTO tb_song (id, name, artist_id, album, release_time, cover_url) VALUES (2, '另一首', 1, '专辑', CURRENT_DATE, '/song.png')");
-        jdbc.update("UPDATE tb_playlist SET cover_url = '/playlist.png' WHERE id = 1");
-        jdbc.update("INSERT INTO tb_playlist_binding (playlist_id, song_id) VALUES (1, 1), (1, 2)");
+                "INSERT INTO music_song (id, name, artist_id, album, release_time, cover_url) VALUES (2, '另一首', 1, '专辑', CURRENT_DATE, '/song.png')");
+        jdbc.update("UPDATE music_playlist SET cover_url = '/playlist.png' WHERE id = 1");
         jdbc.update(
-                "INSERT INTO tb_comment (user_id, playlist_id, content, type, like_count, create_time) VALUES (1, 1, '评论一', 1, 2, CURRENT_TIMESTAMP), (2, 1, '评论二', 1, 3, CURRENT_TIMESTAMP)");
+                "INSERT INTO music_playlist_binding (playlist_id, song_id) VALUES (1, 1), (1, 2)");
         jdbc.update(
-                "INSERT INTO tb_comment (user_id, song_id, content, type, like_count, create_time) VALUES (1, 2, '歌曲评论', 0, 4, CURRENT_TIMESTAMP)");
+                "INSERT INTO music_comment (user_id, playlist_id, content, type, like_count, create_time) VALUES (1, 1, '评论一', 1, 2, CURRENT_TIMESTAMP), (2, 1, '评论二', 1, 3, CURRENT_TIMESTAMP)");
+        jdbc.update(
+                "INSERT INTO music_comment (user_id, song_id, content, type, like_count, create_time) VALUES (1, 2, '歌曲评论', 0, 4, CURRENT_TIMESTAMP)");
         mvc.perform(get("/music/public/playlist/getPlaylistDetail/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.coverUrl").value("/playlist.png"))
@@ -417,7 +422,7 @@ class MusicTest {
 
     @Test
     void emptyDetails() throws Exception {
-        jdbc.update("INSERT INTO tb_artist (id, name) VALUES (2, '空歌手')");
+        jdbc.update("INSERT INTO music_artist (id, name) VALUES (2, '空歌手')");
         mvc.perform(get("/music/public/artist/getArtistDetail/2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.songs").isArray())
@@ -433,9 +438,9 @@ class MusicTest {
 
     @Test
     void favoriteFilter() throws Exception {
-        jdbc.update("INSERT INTO tb_playlist (id, title, style) VALUES (2, '轻音', '流行')");
+        jdbc.update("INSERT INTO music_playlist (id, title, style) VALUES (2, '轻音', '流行')");
         jdbc.update(
-                "INSERT INTO tb_user_favorite (user_id, playlist_id, type, create_time) VALUES (1,1,1,'2026-01-01'), (1,2,1,'2026-01-02'), (2,2,1,'2026-01-03')");
+                "INSERT INTO music_user_favorite (user_id, playlist_id, type, create_time) VALUES (1,1,1,'2026-01-01'), (1,2,1,'2026-01-02'), (2,2,1,'2026-01-03')");
         mvc.perform(
                         post("/music/favorite/getFavoritePlaylists")
                                 .header("Authorization", jwt.generateToken("writer01"))
@@ -459,7 +464,7 @@ class MusicTest {
     @Test
     void songStyles() throws Exception {
         String token = jwt.generateToken("ADMIN");
-        jdbc.update("INSERT INTO tb_style (id, name) VALUES (1, '流行'), (2, '轻音乐')");
+        jdbc.update("INSERT INTO music_style (id, name) VALUES (1, '流行'), (2, '轻音乐')");
         mvc.perform(
                         post("/music/admin/addSong")
                                 .header("Authorization", token)
@@ -470,12 +475,12 @@ class MusicTest {
 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
-        Long id = jdbc.queryForObject("SELECT id FROM tb_song WHERE name = '新歌'", Long.class);
+        Long id = jdbc.queryForObject("SELECT id FROM music_song WHERE name = '新歌'", Long.class);
         org.junit.jupiter.api.Assertions.assertEquals(
                 2,
                 jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM tb_genre WHERE song_id = ?", Integer.class, id));
-        jdbc.update("INSERT INTO tb_genre (song_id, style_id) VALUES (1, 1)");
+                        "SELECT COUNT(*) FROM music_genre WHERE song_id = ?", Integer.class, id));
+        jdbc.update("INSERT INTO music_genre (song_id, style_id) VALUES (1, 1)");
         mvc.perform(
                         post("/music/favorite/collectSong")
                                 .param("songId", "1")
@@ -496,13 +501,13 @@ class MusicTest {
         org.junit.jupiter.api.Assertions.assertEquals(
                 1,
                 jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM tb_genre WHERE song_id = ?", Integer.class, id));
+                        "SELECT COUNT(*) FROM music_genre WHERE song_id = ?", Integer.class, id));
     }
 
     @Test
     void adminQueries() throws Exception {
         String token = jwt.generateToken("ADMIN");
-        jdbc.update("UPDATE tb_artist SET gender = 0, area = '中国' WHERE id = 1");
+        jdbc.update("UPDATE music_artist SET gender = 0, area = '中国' WHERE id = 1");
         mvc.perform(
                         post("/music/admin/listArtists")
                                 .header("Authorization", token)
@@ -524,7 +529,7 @@ class MusicTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.list[0].artistName").value("歌手"));
         jdbc.update(
-                "INSERT INTO tb_banner (id, banner_url, status) VALUES (1, '/banner.png', 0), (2, '/hidden.png', 1)");
+                "INSERT INTO music_banner (id, banner_url, status) VALUES (1, '/banner.png', 0), (2, '/hidden.png', 1)");
         mvc.perform(get("/music/public/banner/getBannerList"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1));

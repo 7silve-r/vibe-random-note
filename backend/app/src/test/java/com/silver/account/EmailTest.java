@@ -35,16 +35,16 @@ class EmailTest {
 
     @BeforeEach
     void setup() {
-        jdbc.update("DELETE FROM email_code");
-        jdbc.update("DELETE FROM `user`");
+        jdbc.update("DELETE FROM account_email_code");
+        jdbc.update("DELETE FROM `account_user`");
         jdbc.update(
-                "INSERT INTO `user` (id, username, email, email_verified, role) VALUES (1, 'writer01', 'reader@example.com', TRUE, 'USER'), (2, 'ADMIN', 'admin@example.com', TRUE, 'ADMIN')");
+                "INSERT INTO `account_user` (id, username, email, email_verified, role) VALUES (1, 'writer01', 'reader@example.com', TRUE, 'USER'), (2, 'ADMIN', 'admin@example.com', TRUE, 'ADMIN')");
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
     void code(String email, String purpose) {
         jdbc.update(
-                "INSERT INTO email_code (email, purpose, code, expires_at, sent_at, attempts) VALUES (?, ?, ?, DATEADD('MINUTE', 5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, 0)",
+                "INSERT INTO account_email_code (email, purpose, code, expires_at, sent_at, attempts) VALUES (?, ?, ?, DATEADD('MINUTE', 5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, 0)",
                 email,
                 purpose,
                 encoder.encode("123456"));
@@ -72,7 +72,8 @@ class EmailTest {
         String value = sent.getValue().getText().replaceAll("[^0-9]", "").substring(0, 6);
         assertTrue(
                 encoder.matches(
-                        value, jdbc.queryForObject("SELECT code FROM email_code", String.class)));
+                        value,
+                        jdbc.queryForObject("SELECT code FROM account_email_code", String.class)));
     }
 
     @Test
@@ -99,11 +100,11 @@ class EmailTest {
                 encoder.matches(
                         "NewPass123!",
                         jdbc.queryForObject(
-                                "SELECT password FROM `user` WHERE id = 1", String.class)));
+                                "SELECT password FROM `account_user` WHERE id = 1", String.class)));
         assertEquals(
                 1,
                 jdbc.queryForObject(
-                        "SELECT token_version FROM `user` WHERE id = 1", Integer.class));
+                        "SELECT token_version FROM `account_user` WHERE id = 1", Integer.class));
         mvc.perform(
                         post("/api/password/reset")
                                 .contentType("application/json")
@@ -125,7 +126,8 @@ class EmailTest {
                                 .contentType("application/json")
                                 .content(body("reader@example.com", "123456")))
                 .andExpect(status().isBadRequest());
-        assertEquals(5, jdbc.queryForObject("SELECT attempts FROM email_code", Integer.class));
+        assertEquals(
+                5, jdbc.queryForObject("SELECT attempts FROM account_email_code", Integer.class));
     }
 
     @Test
@@ -139,10 +141,10 @@ class EmailTest {
                 .andExpect(status().isOk());
         assertEquals(
                 "new@example.com",
-                jdbc.queryForObject("SELECT email FROM `user` WHERE id = 1", String.class));
+                jdbc.queryForObject("SELECT email FROM `account_user` WHERE id = 1", String.class));
         assertTrue(
                 jdbc.queryForObject(
-                        "SELECT email_verified FROM `user` WHERE id = 1", Boolean.class));
+                        "SELECT email_verified FROM `account_user` WHERE id = 1", Boolean.class));
     }
 
     @Test

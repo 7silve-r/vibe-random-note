@@ -6,6 +6,7 @@ import { api } from '../api';
 import { useAuth } from '../stores/auth';
 import { useUi } from '../stores/ui';
 import { markdown } from '../utils/markdown';
+import { poemQuote, type Poem } from '../data/poems';
 const route = useRoute(),
   router = useRouter(),
   auth = useAuth(),
@@ -22,6 +23,7 @@ const route = useRoute(),
   saved = ref(''),
   error = ref(''),
   draft = ref<any>(null);
+const quotation = ref<Poem | null>(null);
 const key = computed(() => `vibe-draft:${auth.user?.id}:${route.params.id || 'new'}`);
 function data() {
   return { title: title.value, content: content.value, cateId: cateId.value, state: state.value };
@@ -50,6 +52,7 @@ async function init() {
   state.value = '私有';
   draft.value = null;
   file.value = undefined;
+  quotation.value = null;
   if (!auth.require()) return;
   try {
     categories.value = await api('/my/categories');
@@ -62,12 +65,29 @@ async function init() {
     }
     const raw = localStorage.getItem(key.value);
     draft.value = raw ? JSON.parse(raw) : null;
+    if (!route.params.id && route.query.poem) {
+      quotation.value = await api<Poem>(
+        '/public/poetry/' + encodeURIComponent(String(route.query.poem)),
+      );
+    }
     await Promise.resolve();
     ready.value = true;
     dirty.value = false;
+    if (quotation.value && !draft.value) insertQuote();
   } catch (e) {
     error.value = (e as Error).message;
   }
+}
+function insertQuote() {
+  if (!quotation.value) return;
+  if (draft.value) restore();
+  const quote = poemQuote(quotation.value);
+  if (!content.value.includes(quote))
+    content.value = content.value ? content.value + '\n\n' + quote : quote;
+  if (!title.value) title.value = `读《${quotation.value.title}》有感`.slice(0, 200);
+  quotation.value = null;
+  dirty.value = true;
+  persist();
 }
 function discard() {
   localStorage.removeItem(key.value);
@@ -122,7 +142,7 @@ onBeforeRouteLeave(
     !dirty.value ||
     (await ui.confirm('日记还未保存到账号，本机文字草稿已保留。确定离开？封面需要重新选择。')),
 );
-watch(() => [auth.user?.id, route.params.id], init, { immediate: true });
+watch(() => [auth.user?.id, route.params.id, route.query.poem], init, { immediate: true });
 </script>
 <template>
   <header class="section-head">
@@ -141,6 +161,10 @@ watch(() => [auth.user?.id, route.params.id], init, { immediate: true });
     <button @click="init">重新加载</button>
   </StatePanel>
   <form v-else-if="ready" class="panel form" @submit.prevent="save">
+    <div v-if="quotation" class="row wrap">
+      <span>已带来《{{ quotation.title }}》，现有草稿会保留。</span
+      ><button type="button" @click="insertQuote">在草稿中引用诗词</button>
+    </div>
     <div v-if="draft" class="row wrap">
       <span>发现这篇日记的本机草稿。</span><button type="button" @click="restore">恢复草稿</button
       ><button type="button" @click="discard">丢弃草稿</button>

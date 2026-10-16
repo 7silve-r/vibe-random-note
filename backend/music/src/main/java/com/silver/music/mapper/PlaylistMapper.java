@@ -10,14 +10,14 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface PlaylistMapper extends BaseMapper<Playlist> {
-    @Select("SELECT * FROM tb_playlist WHERE id = #{id} FOR UPDATE")
+    @Select("SELECT * FROM music_playlist WHERE id = #{id} FOR UPDATE")
     Playlist lock(Long id);
 
     @Select(
             """
             <script>
             SELECT style
-                    FROM tb_playlist
+                    FROM music_playlist
                     WHERE id IN
                     <foreach item="id" collection="favoritePlaylistIds" open="(" separator="," close=")">
                         #{id}
@@ -31,7 +31,7 @@ public interface PlaylistMapper extends BaseMapper<Playlist> {
             """
             <script>
             SELECT id AS playlistId, title, cover_url AS coverUrl
-                    FROM tb_playlist
+                    FROM music_playlist
                     WHERE style IN
                     <foreach item="style" collection="styles" open="(" separator="," close=")">
                         #{style}
@@ -55,7 +55,7 @@ public interface PlaylistMapper extends BaseMapper<Playlist> {
                 p.id AS playlistId,
                 p.title AS title,
                 p.cover_url AS coverUrl
-            FROM tb_playlist p
+            FROM music_playlist p
             ORDER BY RAND()
             LIMIT #{limit}
             """)
@@ -68,8 +68,8 @@ public interface PlaylistMapper extends BaseMapper<Playlist> {
                     p.id AS playlistId,
                     p.title AS title,
                     p.cover_url AS coverUrl
-                    FROM tb_playlist p
-                    LEFT JOIN tb_user_favorite u ON p.id = u.playlist_id AND u.user_id = #{userId}
+                    FROM music_playlist p
+                    LEFT JOIN music_user_favorite u ON p.id = u.playlist_id AND u.user_id = #{userId}
                     WHERE
                     <if test="playlistIds != null and playlistIds.size() &gt; 0">
                         p.id IN

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface EmailCodeMapper extends BaseMapper<EmailCode> {
-    @Select("SELECT * FROM email_code WHERE email = #{email} AND purpose = #{purpose} FOR UPDATE")
+    @Select(
+            "SELECT * FROM account_email_code WHERE email = #{email} AND purpose = #{purpose} FOR UPDATE")
     EmailCode lock(@Param("email") String email, @Param("purpose") String purpose);
 }

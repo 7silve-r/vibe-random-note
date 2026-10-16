@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("article")
+@TableName("diary_article")
 public class Article {
     @TableId(type = IdType.AUTO)
     private Integer id;

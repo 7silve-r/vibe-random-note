@@ -33,18 +33,18 @@ class ArticleSocialTest {
 
     @BeforeEach
     void setup() {
-        jdbc.update("DELETE FROM article_comment_like");
-        jdbc.update("DELETE FROM article_comment");
-        jdbc.update("DELETE FROM article_like");
-        jdbc.update("DELETE FROM article_favorite");
-        jdbc.update("DELETE FROM article");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM `user`");
+        jdbc.update("DELETE FROM diary_article_comment_like");
+        jdbc.update("DELETE FROM diary_article_comment");
+        jdbc.update("DELETE FROM diary_article_like");
+        jdbc.update("DELETE FROM diary_article_favorite");
+        jdbc.update("DELETE FROM diary_article");
+        jdbc.update("DELETE FROM diary_category");
+        jdbc.update("DELETE FROM `account_user`");
         jdbc.update(
-                "INSERT INTO `user` (id, username, role) VALUES (1, 'owner01', 'USER'), (2, 'reader01', 'USER'), (3, 'ADMIN', 'ADMIN')");
-        jdbc.update("INSERT INTO category (id, cate_name, create_user) VALUES (1, '生活', 1)");
+                "INSERT INTO `account_user` (id, username, role) VALUES (1, 'owner01', 'USER'), (2, 'reader01', 'USER'), (3, 'ADMIN', 'ADMIN')");
+        jdbc.update("INSERT INTO diary_category (id, cate_name, create_user) VALUES (1, '生活', 1)");
         jdbc.update(
-                "INSERT INTO article (id, title, content, state, create_user, cate_id) VALUES (10, '公开标题', '公开正文', '公开', 1, 1), (11, '私有标题', '私有正文', '私有', 1, 1)");
+                "INSERT INTO diary_article (id, title, content, state, create_user, cate_id) VALUES (10, '公开标题', '公开正文', '公开', 1, 1), (11, '私有标题', '私有正文', '私有', 1, 1)");
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
@@ -56,7 +56,7 @@ class ArticleSocialTest {
     void coverReadPermissions() throws Exception {
         String key = "covers/12345678-1234-1234-1234-123456789012.png";
         String url = "/uploads/" + key;
-        jdbc.update("UPDATE article SET cover_img = ? WHERE id = 11", url);
+        jdbc.update("UPDATE diary_article SET cover_img = ? WHERE id = 11", url);
         byte[] bytes = {1, 2, 3};
         var object = mock(InputStream.class);
         when(object.readAllBytes()).thenReturn(bytes);
@@ -70,9 +70,9 @@ class ArticleSocialTest {
                 .andExpect(content().bytes(bytes))
                 .andExpect(content().contentType("image/png"))
                 .andExpect(header().string("Cache-Control", "no-store"));
-        jdbc.update("UPDATE article SET state = '公开' WHERE id = 11");
+        jdbc.update("UPDATE diary_article SET state = '公开' WHERE id = 11");
         mvc.perform(get(url)).andExpect(status().isOk());
-        jdbc.update("UPDATE article SET state = '私有' WHERE id = 11");
+        jdbc.update("UPDATE diary_article SET state = '私有' WHERE id = 11");
         mvc.perform(get(url)).andExpect(status().isNotFound());
         verify(storage, times(2)).read("/uploads/" + key);
         verify(object, times(2)).close();
@@ -144,7 +144,8 @@ class ArticleSocialTest {
                                         "{\"cateName\":\"读书\",\"cateAlias\":\"read\",\"createUser\":1}"))
                 .andExpect(status().isOk());
         Integer categoryId =
-                jdbc.queryForObject("SELECT id FROM category WHERE create_user = 2", Integer.class);
+                jdbc.queryForObject(
+                        "SELECT id FROM diary_category WHERE create_user = 2", Integer.class);
         mvc.perform(
                         multipart("/my/article")
                                 .header("Authorization", token("reader01"))
@@ -157,7 +158,7 @@ class ArticleSocialTest {
         assertEquals(
                 2,
                 jdbc.queryForObject(
-                        "SELECT create_user FROM article WHERE cate_id = ?",
+                        "SELECT create_user FROM diary_article WHERE cate_id = ?",
                         Integer.class,
                         categoryId));
         mvc.perform(
@@ -235,18 +236,20 @@ class ArticleSocialTest {
                                 .contentType("application/json")
                                 .content("{\"content\":\"喜欢这篇日记\"}"))
                 .andExpect(status().isOk());
-        Integer id = jdbc.queryForObject("SELECT id FROM article_comment", Integer.class);
+        Integer id = jdbc.queryForObject("SELECT id FROM diary_article_comment", Integer.class);
         mvc.perform(delete("/my/article/comments/" + id).header("Authorization", token("owner01")))
                 .andExpect(status().isForbidden());
         mvc.perform(delete("/my/article/comments/" + id).header("Authorization", token("reader01")))
                 .andExpect(status().isOk());
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM article_comment", Integer.class));
+        assertEquals(
+                0,
+                jdbc.queryForObject("SELECT COUNT(*) FROM diary_article_comment", Integer.class));
     }
 
     @Test
     void commentLikes() throws Exception {
         jdbc.update(
-                "INSERT INTO article_comment (id, article_id, user_id, content, create_time) VALUES (5, 10, 2, 'hi', CURRENT_TIMESTAMP)");
+                "INSERT INTO diary_article_comment (id, article_id, user_id, content, create_time) VALUES (5, 10, 2, 'hi', CURRENT_TIMESTAMP)");
         for (int i = 0; i < 2; i++)
             mvc.perform(
                             post("/my/article/comments/5/like")
@@ -257,13 +260,15 @@ class ArticleSocialTest {
         mvc.perform(delete("/my/article/comments/5").header("Authorization", token("ADMIN")))
                 .andExpect(status().isOk());
         assertEquals(
-                0, jdbc.queryForObject("SELECT COUNT(*) FROM article_comment_like", Integer.class));
+                0,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM diary_article_comment_like", Integer.class));
     }
 
     @Test
     void privateComment() throws Exception {
         jdbc.update(
-                "INSERT INTO article_comment (id, article_id, user_id, content, create_time) VALUES (5, 11, 2, 'hi', CURRENT_TIMESTAMP)");
+                "INSERT INTO diary_article_comment (id, article_id, user_id, content, create_time) VALUES (5, 11, 2, 'hi', CURRENT_TIMESTAMP)");
         mvc.perform(get("/public/articles/11/comments")).andExpect(status().isNotFound());
         mvc.perform(delete("/my/article/comments/5").header("Authorization", token("ADMIN")))
                 .andExpect(status().isNotFound());
@@ -278,7 +283,8 @@ class ArticleSocialTest {
         mvc.perform(delete("/admin/diary/articles/10").header("Authorization", token("ADMIN")))
                 .andExpect(status().isOk());
         assertEquals(
-                0, jdbc.queryForObject("SELECT COUNT(*) FROM article_favorite", Integer.class));
+                0,
+                jdbc.queryForObject("SELECT COUNT(*) FROM diary_article_favorite", Integer.class));
         mvc.perform(delete("/admin/diary/articles/11").header("Authorization", token("ADMIN")))
                 .andExpect(status().isNotFound());
     }
@@ -286,7 +292,8 @@ class ArticleSocialTest {
     @Test
     void privateCover() throws Exception {
         String name = "12345678-1234-1234-1234-123456789012.png";
-        jdbc.update("UPDATE article SET cover_img = ? WHERE id = 11", "/uploads/covers/" + name);
+        jdbc.update(
+                "UPDATE diary_article SET cover_img = ? WHERE id = 11", "/uploads/covers/" + name);
         mvc.perform(get("/uploads/covers/" + name)).andExpect(status().isNotFound());
         mvc.perform(get("/uploads/covers/" + name).header("Authorization", token("ADMIN")))
                 .andExpect(status().isNotFound());
@@ -307,6 +314,8 @@ class ArticleSocialTest {
         mvc.perform(delete("/admin/users/1").header("Authorization", token("ADMIN")))
                 .andExpect(status().isForbidden());
         assertEquals(
-                1, jdbc.queryForObject("SELECT COUNT(*) FROM `user` WHERE id = 1", Integer.class));
+                1,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM `account_user` WHERE id = 1", Integer.class));
     }
 }

@@ -38,17 +38,17 @@ class UploadHttpTest {
     @BeforeEach
     void setup() {
         jdbc.update(
-                "INSERT INTO `user` (id, username, role) VALUES (901, 'upload_admin', 'ADMIN')");
-        jdbc.update("INSERT INTO tb_artist (id, name) VALUES (901, 'upload artist')");
+                "INSERT INTO `account_user` (id, username, role) VALUES (901, 'upload_admin', 'ADMIN')");
+        jdbc.update("INSERT INTO music_artist (id, name) VALUES (901, 'upload artist')");
         jdbc.update(
-                "INSERT INTO tb_song (id, name, artist_id, album, release_time) VALUES (901, 'upload song', 901, 'test album', CURRENT_DATE)");
+                "INSERT INTO music_song (id, name, artist_id, album, release_time) VALUES (901, 'upload song', 901, 'test album', CURRENT_DATE)");
     }
 
     @AfterEach
     void cleanup() {
-        jdbc.update("DELETE FROM tb_song WHERE id = 901");
-        jdbc.update("DELETE FROM tb_artist WHERE id = 901");
-        jdbc.update("DELETE FROM `user` WHERE id = 901");
+        jdbc.update("DELETE FROM music_song WHERE id = 901");
+        jdbc.update("DELETE FROM music_artist WHERE id = 901");
+        jdbc.update("DELETE FROM `account_user` WHERE id = 901");
     }
 
     private HttpResponse<String> send(int megabytes) throws Exception {
@@ -97,7 +97,8 @@ class UploadHttpTest {
         assertEquals(200, response.statusCode(), response.body());
         assertEquals(
                 "http://storage.invalid/test.mp3",
-                jdbc.queryForObject("SELECT audio_url FROM tb_song WHERE id = 901", String.class));
+                jdbc.queryForObject(
+                        "SELECT audio_url FROM music_song WHERE id = 901", String.class));
         verify(storage).upload(any(), eq(UploadTarget.SONG_AUDIO));
     }
 

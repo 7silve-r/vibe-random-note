@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-@TableName("tb_song")
+@TableName("music_song")
 public class Song {
 
     @TableId(value = "id", type = IdType.AUTO)

@@ -25,6 +25,8 @@ Desktop.ini
 **/dist/
 **/.vite/
 **/*.tsbuildinfo
+**/__pycache__/
+**/*.py[cod]
 
 # =========================
 # Java / Maven 构建产物

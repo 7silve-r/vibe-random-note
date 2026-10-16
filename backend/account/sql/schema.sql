@@ -1,7 +1,7 @@
--- Only creates missing tables. Run against a NEW music_diary database.
-CREATE DATABASE IF NOT EXISTS music_diary CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-USE music_diary;
-CREATE TABLE IF NOT EXISTS `user` (
+-- Only creates missing tables. Run against a NEW vibe_random_note database.
+CREATE DATABASE IF NOT EXISTS vibe_random_note CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE vibe_random_note;
+CREATE TABLE IF NOT EXISTS `account_user` (
   id INT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(30) NOT NULL UNIQUE,
   role VARCHAR(10) NOT NULL DEFAULT 'USER',
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS email_code (
+CREATE TABLE IF NOT EXISTS account_email_code (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(254) NOT NULL,
   purpose VARCHAR(10) NOT NULL,

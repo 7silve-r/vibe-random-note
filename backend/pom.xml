@@ -23,6 +23,7 @@
         <module>account</module>
         <module>diary</module>
         <module>music</module>
+        <module>poetry</module>
         <module>app</module>
     </modules>
     <build>

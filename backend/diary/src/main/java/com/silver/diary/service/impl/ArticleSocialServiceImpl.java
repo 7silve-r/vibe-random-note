@@ -88,7 +88,7 @@ public class ArticleSocialServiceImpl implements ArticleSocialService {
         if (favorites)
             query.inSql(
                     Article::getId,
-                    "SELECT article_id FROM article_favorite WHERE user_id = "
+                    "SELECT article_id FROM diary_article_favorite WHERE user_id = "
                             + SecurityUtil.userId());
         var page =
                 articleMapper.selectPage(

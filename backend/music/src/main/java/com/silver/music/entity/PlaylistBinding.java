@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("tb_playlist_binding")
+@TableName("music_playlist_binding")
 public class PlaylistBinding {
 
     @TableId(value = "playlist_id", type = IdType.INPUT)

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("tb_comment")
+@TableName("music_comment")
 public class Comment {
 
     @TableId(value = "id", type = IdType.AUTO)

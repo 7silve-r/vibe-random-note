@@ -1,0 +1,12 @@
+[
+  {"code":"tang","name":"唐诗","folder":"全唐诗","pattern":"poet.tang.*.json","authors":"authors.tang.json","dynasty":"唐","kind":"诗","contentField":"paragraphs"},
+  {"code":"song","name":"宋诗","folder":"全唐诗","pattern":"poet.song.*.json","authors":"authors.song.json","dynasty":"宋","kind":"诗","contentField":"paragraphs"},
+  {"code":"song-ci","name":"宋词","folder":"宋词","pattern":"ci.song.*.json","authors":"author.song.json","dynasty":"宋","kind":"词","contentField":"paragraphs"},
+  {"code":"shijing","name":"诗经","folder":"诗经","pattern":"shijing.json","dynasty":"先秦","kind":"诗","contentField":"content","defaultAuthor":"佚名","titleFields":["chapter","section","title"]},
+  {"code":"chuci","name":"楚辞","folder":"楚辞","pattern":"chuci.json","dynasty":"先秦至汉","kind":"辞赋","contentField":"content","titleFields":["section","title"]},
+  {"code":"yuanqu","name":"元曲","folder":"元曲","pattern":"yuanqu.json","dynasty":"元","kind":"曲","contentField":"paragraphs"},
+  {"code":"huajianji","name":"花间集","folder":"五代诗词/huajianji","pattern":"huajianji-*-juan.json","dynasty":"唐五代","kind":"词","contentField":"paragraphs"},
+  {"code":"nantang","name":"南唐二主词","folder":"五代诗词/nantang","pattern":"poetrys.json","authors":"authors.json","dynasty":"五代","kind":"词","contentField":"paragraphs"},
+  {"code":"caocao","name":"曹操诗集","folder":"曹操诗集","pattern":"caocao.json","dynasty":"汉末","kind":"诗","contentField":"paragraphs","defaultAuthor":"曹操"},
+  {"code":"nalan","name":"纳兰诗词","folder":"纳兰性德","pattern":"纳兰性德诗集.json","dynasty":"清","kind":"诗词","contentField":"para"}
+]

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { Shuffle, Sun, Cloud, CloudRain, Feather, Check, Trash2 } from 'lucide-vue-next';
+import { Sun, Cloud, CloudRain, Feather, Check, Trash2 } from 'lucide-vue-next';
 import { useAuth } from '../stores/auth';
 import { useUi } from '../stores/ui';
-import { poems, localDay } from '../data/poems';
+import { localDay, type Poem } from '../data/poems';
+import { api } from '../api';
 const auth = useAuth(),
   ui = useUi();
 const now = ref(new Date());
@@ -16,10 +17,21 @@ const dateLabel = computed(() =>
     weekday: 'long',
   }).format(now.value),
 );
-const poemIndex = ref(
-  (now.value.getFullYear() * 372 + now.value.getMonth() * 31 + now.value.getDate()) % poems.length,
-);
-const poem = computed(() => poems[poemIndex.value]);
+const poem = ref<Poem | null>(null),
+  poemError = ref(''),
+  poemLoading = ref(false);
+async function loadPoem() {
+  poemLoading.value = true;
+  poemError.value = '';
+  try {
+    poem.value = await api<Poem>('/public/poetry/daily');
+  } catch {
+    poemError.value = '今日诗签暂未送达';
+  } finally {
+    poemLoading.value = false;
+  }
+}
+watch(day, loadPoem, { immediate: true });
 const moods = [
   { name: '晴朗', icon: Sun, color: '#f6e2bf' },
   { name: '平静', icon: Cloud, color: '#d5e3f6' },
@@ -88,22 +100,24 @@ onBeforeUnmount(() => clearInterval(clock));
     </div>
     <section class="poetry-feature" aria-label="今日诗签">
       <div class="row">
-        <span class="eyebrow">今日诗签</span
-        ><span class="poem-number"
-          >{{ String(poemIndex + 1).padStart(2, '0') }} /
-          {{ String(poems.length).padStart(2, '0') }}</span
-        >
+        <span class="eyebrow">今日诗签</span><span class="poem-number">一日 · 一签</span>
       </div>
-      <blockquote :key="poem.author" aria-live="polite">
-        <p v-for="line in poem.lines" :key="line">{{ line }}</p>
-      </blockquote>
-      <div class="row">
-        <a :href="poem.source" target="_blank" rel="noopener noreferrer" class="poem-credit"
-          >{{ poem.author }} ·《{{ poem.title }}》</a
-        ><button class="poem-next" @click="poemIndex = (poemIndex + 1) % poems.length">
-          <Shuffle :size="14" />换一签
-        </button>
+      <p v-if="poemLoading" class="muted" role="status">正在展开今日诗签…</p>
+      <div v-else-if="poemError">
+        <p class="muted">{{ poemError }}</p>
+        <button @click="loadPoem">再试一次</button>
       </div>
+      <template v-else-if="poem">
+        <blockquote :key="poem.id" aria-live="polite">
+          <p v-for="(line, index) in (poem.excerpt || '').split('\n')" :key="index">{{ line }}</p>
+        </blockquote>
+        <div class="row wrap">
+          <RouterLink :to="'/poetry/' + poem.id" class="poem-credit"
+            >{{ poem.author }} ·《{{ poem.title }}》</RouterLink
+          >
+          <RouterLink :to="'/poetry/' + poem.id" class="poem-next">读完整首 →</RouterLink>
+        </div>
+      </template>
     </section>
     <span class="studio-mark" aria-hidden="true">{{ day.slice(5).replace('-', ' / ') }}</span>
   </section>

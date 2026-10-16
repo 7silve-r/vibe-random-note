@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { Headphones, BookOpen, House, UserRound, ShieldCheck, Menu, X } from 'lucide-vue-next';
+import {
+  Headphones,
+  BookOpen,
+  Feather,
+  House,
+  UserRound,
+  ShieldCheck,
+  Menu,
+  X,
+} from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { useAuth } from './stores/auth';
 import { useUi } from './stores/ui';
@@ -9,6 +18,7 @@ import SmartImage from './components/SmartImage.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import PlayerDock from './components/PlayerDock.vue';
 import CharacterIcon from './components/CharacterIcon.vue';
+import NoticeStream from './components/NoticeStream.vue';
 import StatePanel from './components/StatePanel.vue';
 import GiftPoem from './components/GiftPoem.vue';
 const auth = useAuth(),
@@ -117,6 +127,13 @@ onBeforeUnmount(() => {
           @click="menuOpen = false"
           ><BookOpen :size="18" /><span>日记</span><small>DIARY</small></RouterLink
         >
+        <RouterLink
+          to="/poetry"
+          aria-label="诗词"
+          :class="{ active: route.path.startsWith('/poetry') }"
+          @click="menuOpen = false"
+          ><Feather :size="18" /><span>诗词</span><small>POETRY</small></RouterLink
+        >
       </nav>
       <div class="sidebar-bottom">
         <span class="tiny muted">VIBE RANDOM NOTES</span
@@ -150,22 +167,9 @@ onBeforeUnmount(() => {
     </main>
     <PlayerDock />
     <footer class="site-footer">
-      <span>VIBE RANDOM NOTES</span><span>音乐 / 日记</span><span aria-hidden="true">✧</span>
+      <span>VIBE RANDOM NOTES</span><span>音乐 / 日记 / 诗词</span><span aria-hidden="true">✧</span>
     </footer>
   </template>
   <AuthDialog v-if="ui.authOpen" /><ConfirmDialog v-if="ui.dialog" />
-  <div class="toasts" aria-live="polite">
-    <div
-      v-for="n in ui.notices"
-      :key="n.id"
-      class="toast glass"
-      :class="{ error: n.error }"
-      role="status"
-    >
-      <CharacterIcon :mood="n.error ? 'error' : 'success'" /><span>{{ n.text }}</span
-      ><button aria-label="关闭提示" @click="ui.notices = ui.notices.filter((x) => x.id !== n.id)">
-        ×
-      </button>
-    </div>
-  </div>
+  <NoticeStream />
 </template>

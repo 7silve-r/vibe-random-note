@@ -1,13 +1,13 @@
 -- Structure only, extracted from the local upstream schema. No account or content rows.
--- Use a NEW empty music_diary database. This file is not a schema migration.
-CREATE DATABASE IF NOT EXISTS music_diary CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-USE music_diary;
+-- Use a NEW empty vibe_random_note database. This file is not a schema migration.
+CREATE DATABASE IF NOT EXISTS vibe_random_note CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE vibe_random_note;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 
 
-CREATE TABLE IF NOT EXISTS `tb_artist`  (
+CREATE TABLE IF NOT EXISTS `music_artist`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '歌手 id',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '歌手姓名',
   `gender` int(0) NULL DEFAULT NULL COMMENT '歌手性别：0-男，1-女，2-组合/乐队',
@@ -19,14 +19,14 @@ CREATE TABLE IF NOT EXISTS `tb_artist`  (
   INDEX `name`(`name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_banner`  (
+CREATE TABLE IF NOT EXISTS `music_banner`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '轮播图 id',
   `banner_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '轮播图 url',
   `status` tinyint(0) NOT NULL COMMENT '轮播图状态：0-启用，1-禁用',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_comment`  (
+CREATE TABLE IF NOT EXISTS `music_comment`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '评论 id',
   `user_id` int NOT NULL COMMENT '用户 id',
   `song_id` bigint(0) NULL DEFAULT NULL COMMENT '歌曲 id',
@@ -39,31 +39,31 @@ CREATE TABLE IF NOT EXISTS `tb_comment`  (
   INDEX `fk_comment_song_id`(`song_id`) USING BTREE,
   INDEX `fk_comment_user_id`(`user_id`) USING BTREE,
   INDEX `fk_comment_playlist_id`(`playlist_id`) USING BTREE,
-  CONSTRAINT `fk_comment_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `tb_playlist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_comment_song_id` FOREIGN KEY (`song_id`) REFERENCES `tb_song` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_comment_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_comment_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `music_playlist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_comment_song_id` FOREIGN KEY (`song_id`) REFERENCES `music_song` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_comment_user_id` FOREIGN KEY (`user_id`) REFERENCES `account_user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_feedback`  (
+CREATE TABLE IF NOT EXISTS `music_feedback`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '反馈 id',
   `user_id` int NOT NULL COMMENT '用户 id',
   `feedback` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '反馈内容',
   `create_time` datetime(0) NOT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_feedback_user_id`(`user_id`) USING BTREE,
-  CONSTRAINT `fk_feedback_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_feedback_user_id` FOREIGN KEY (`user_id`) REFERENCES `account_user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_genre`  (
+CREATE TABLE IF NOT EXISTS `music_genre`  (
   `song_id` bigint(0) NOT NULL COMMENT '歌曲 id',
   `style_id` bigint(0) NOT NULL COMMENT '风格 id',
   PRIMARY KEY (`song_id`, `style_id`) USING BTREE,
   INDEX `fk_genre_style_id`(`style_id`) USING BTREE,
-  CONSTRAINT `fk_genre_song_id` FOREIGN KEY (`song_id`) REFERENCES `tb_song` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-  CONSTRAINT `fk_genre_style_id` FOREIGN KEY (`style_id`) REFERENCES `tb_style` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+  CONSTRAINT `fk_genre_song_id` FOREIGN KEY (`song_id`) REFERENCES `music_song` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_genre_style_id` FOREIGN KEY (`style_id`) REFERENCES `music_style` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_playlist`  (
+CREATE TABLE IF NOT EXISTS `music_playlist`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '歌单 id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '歌单标题',
   `cover_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '歌单封面',
@@ -72,16 +72,16 @@ CREATE TABLE IF NOT EXISTS `tb_playlist`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_playlist_binding`  (
+CREATE TABLE IF NOT EXISTS `music_playlist_binding`  (
   `playlist_id` bigint(0) NOT NULL COMMENT '歌单 id',
   `song_id` bigint(0) NOT NULL COMMENT '歌曲 id',
   PRIMARY KEY (`playlist_id`, `song_id`) USING BTREE,
   INDEX `fk_playlist_binding_song_id`(`song_id`) USING BTREE,
-  CONSTRAINT `fk_playlist_binding_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `tb_playlist` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-  CONSTRAINT `fk_playlist_binding_song_id` FOREIGN KEY (`song_id`) REFERENCES `tb_song` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+  CONSTRAINT `fk_playlist_binding_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `music_playlist` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_playlist_binding_song_id` FOREIGN KEY (`song_id`) REFERENCES `music_song` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_song`  (
+CREATE TABLE IF NOT EXISTS `music_song`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '歌曲 id',
   `artist_id` bigint(0) NOT NULL COMMENT '歌手 id',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '歌名',
@@ -94,10 +94,10 @@ CREATE TABLE IF NOT EXISTS `tb_song`  (
   `release_time` date NOT NULL COMMENT '歌曲发行时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_song_artist_id`(`artist_id`) USING BTREE,
-  CONSTRAINT `fk_song_artist_id` FOREIGN KEY (`artist_id`) REFERENCES `tb_artist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_song_artist_id` FOREIGN KEY (`artist_id`) REFERENCES `music_artist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE IF NOT EXISTS `tb_style`  (
+CREATE TABLE IF NOT EXISTS `music_style`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '风格 id',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '风格名称',
   PRIMARY KEY (`id`) USING BTREE,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `tb_style`  (
 
 
 
-CREATE TABLE IF NOT EXISTS `tb_user_favorite`  (
+CREATE TABLE IF NOT EXISTS `music_user_favorite`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT 'id',
   `user_id` int NOT NULL COMMENT '用户 id',
   `type` tinyint(0) NOT NULL COMMENT '收藏类型：0-歌曲，1-歌单',
@@ -119,19 +119,19 @@ CREATE TABLE IF NOT EXISTS `tb_user_favorite`  (
   INDEX `fk_user_favorite_playlist_id`(`playlist_id`) USING BTREE,
   UNIQUE KEY favorite_song (user_id, song_id),
   UNIQUE KEY favorite_playlist (user_id, playlist_id),
-  CONSTRAINT `fk_user_favorite_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `tb_playlist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_user_favorite_song_id` FOREIGN KEY (`song_id`) REFERENCES `tb_song` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_user_favorite_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_user_favorite_playlist_id` FOREIGN KEY (`playlist_id`) REFERENCES `music_playlist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_user_favorite_song_id` FOREIGN KEY (`song_id`) REFERENCES `music_song` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_user_favorite_user_id` FOREIGN KEY (`user_id`) REFERENCES `account_user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-CREATE TABLE IF NOT EXISTS `tb_comment_like` (
+CREATE TABLE IF NOT EXISTS `music_comment_like` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `comment_id` bigint NOT NULL,
   `user_id` int NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY comment_user (`comment_id`, `user_id`),
-  CONSTRAINT comment_like_comment FOREIGN KEY (`comment_id`) REFERENCES `tb_comment` (`id`) ON DELETE CASCADE,
-  CONSTRAINT comment_like_user FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+  CONSTRAINT comment_like_comment FOREIGN KEY (`comment_id`) REFERENCES `music_comment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT comment_like_user FOREIGN KEY (`user_id`) REFERENCES `account_user` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;

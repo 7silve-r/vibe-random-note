@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 @Data
-@TableName("article_comment")
+@TableName("diary_article_comment")
 public class ArticleComment {
     @TableId(type = IdType.AUTO)
     private Integer id;

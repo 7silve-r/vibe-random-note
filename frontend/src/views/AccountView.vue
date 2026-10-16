@@ -18,7 +18,7 @@ const auth = useAuth(),
   feedback = ref(''),
   code = ref(''),
   busy = ref(false),
-  mail = import.meta.env.VITE_MAIL_ENABLED === 'true';
+  mail = import.meta.env.VITE_MAIL_ENABLED !== 'false';
 watch(
   () => auth.user,
   (u) => {

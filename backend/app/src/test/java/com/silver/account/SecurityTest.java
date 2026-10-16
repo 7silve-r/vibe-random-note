@@ -33,9 +33,9 @@ class SecurityTest {
 
     @BeforeEach
     void setup() {
-        jdbc.update("DELETE FROM `user`");
+        jdbc.update("DELETE FROM `account_user`");
         jdbc.update(
-                "INSERT INTO `user` (id, username, role) VALUES (1, 'writer01', 'USER'), (2, 'ADMIN', 'ADMIN')");
+                "INSERT INTO `account_user` (id, username, role) VALUES (1, 'writer01', 'USER'), (2, 'ADMIN', 'ADMIN')");
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
@@ -49,7 +49,7 @@ class SecurityTest {
     @Test
     void passwordLogin() throws Exception {
         jdbc.update(
-                "UPDATE `user` SET password = ?, token_version = 7 WHERE id = 1",
+                "UPDATE `account_user` SET password = ?, token_version = 7 WHERE id = 1",
                 passwordEncoder.encode("Test12345!"));
         String response =
                 mvc.perform(
@@ -75,7 +75,7 @@ class SecurityTest {
     @Test
     void passwordLoginErrors() throws Exception {
         jdbc.update(
-                "UPDATE `user` SET password = ? WHERE id = 1",
+                "UPDATE `account_user` SET password = ? WHERE id = 1",
                 passwordEncoder.encode("Test12345!"));
         mvc.perform(
                         post("/api/login")
@@ -83,7 +83,7 @@ class SecurityTest {
                                 .content("{\"username\":\"writer01\",\"password\":\"wrong\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("用户名或密码错误"));
-        jdbc.update("UPDATE `user` SET status = 1 WHERE id = 1");
+        jdbc.update("UPDATE `account_user` SET status = 1 WHERE id = 1");
         mvc.perform(
                         post("/api/login")
                                 .contentType("application/json")
@@ -136,7 +136,7 @@ class SecurityTest {
 
     @Test
     void disabled() throws Exception {
-        jdbc.update("UPDATE `user` SET status = 1 WHERE id = 1");
+        jdbc.update("UPDATE `account_user` SET status = 1 WHERE id = 1");
         mvc.perform(get("/my/profile").header("Authorization", jwt.generateToken("writer01")))
                 .andExpect(status().isUnauthorized());
     }

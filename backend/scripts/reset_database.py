@@ -53,9 +53,30 @@ def run(sql):
         raise SystemExit(result.stderr)
     return result.stdout
 
-known = ["article_comment_like", "article_comment", "article_favorite", "article_like", "article", "category",
-         "email_code", "tb_comment_like", "tb_comment", "tb_user_favorite", "tb_feedback", "tb_genre",
-         "tb_playlist_binding", "tb_song", "tb_playlist", "tb_artist", "tb_style", "tb_banner", "tb_admin", "tb_user", "user"]
+known = [
+    "poetry_favorite",
+    "poetry_poem",
+    "poetry_author",
+    "diary_article_comment_like",
+    "diary_article_comment",
+    "diary_article_favorite",
+    "diary_article_like",
+    "diary_article",
+    "diary_category",
+    "account_email_code",
+    "music_comment_like",
+    "music_comment",
+    "music_user_favorite",
+    "music_feedback",
+    "music_genre",
+    "music_playlist_binding",
+    "music_song",
+    "music_playlist",
+    "music_artist",
+    "music_style",
+    "music_banner",
+    "account_user",
+]
 existing = set(run("SHOW TABLES;").splitlines())
 unknown = existing - set(known)
 if unknown:
@@ -69,7 +90,7 @@ if not args.apply:
     sys.exit(0)
 
 sql = "SET FOREIGN_KEY_CHECKS=0;\n" + "\n".join("DROP TABLE IF EXISTS `" + table + "`;" for table in known)
-for file in [base / "account/sql/schema.sql", base / "diary/sql/schema.sql", base / "music/sql/schema.sql"]:
+for file in [base / "account/sql/schema.sql", base / "diary/sql/schema.sql", base / "music/sql/schema.sql", base / "poetry/sql/schema.sql", base / "poetry/sql/seed.sql"]:
     schema = file.read_text(encoding="utf-8")
     schema = re.sub(r"(?m)^CREATE DATABASE[^;]*;|^USE [^;]*;", "", schema)
     sql += "\n" + schema

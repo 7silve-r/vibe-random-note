@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 @Data
-@TableName("article_like")
+@TableName("diary_article_like")
 public class ArticleLike {
     @TableId(type = IdType.AUTO)
     private Integer id;

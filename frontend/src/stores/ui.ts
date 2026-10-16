@@ -30,7 +30,9 @@ export const useUi = defineStore('ui', () => {
   function notify(text: string, error = false) {
     const key = ++id;
     notices.value.push({ id: key, text, error });
-    setTimeout(() => (notices.value = notices.value.filter((n) => n.id !== key)), 6000);
+  }
+  function dismissNotice(id: number) {
+    notices.value = notices.value.filter((n) => n.id !== id);
   }
   async function run<T>(fn: () => Promise<T>, message?: string): Promise<T | undefined> {
     try {
@@ -41,5 +43,5 @@ export const useUi = defineStore('ui', () => {
       notify(e instanceof Error ? e.message : '操作未完成', true);
     }
   }
-  return { notices, authOpen, notify, run, dialog, confirm, ask, answer };
+  return { notices, authOpen, notify, dismissNotice, run, dialog, confirm, ask, answer };
 });

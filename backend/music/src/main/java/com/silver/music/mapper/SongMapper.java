@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface SongMapper extends BaseMapper<Song> {
-    @Select("SELECT * FROM tb_song WHERE id = #{id} FOR UPDATE")
+    @Select("SELECT * FROM music_song WHERE id = #{id} FOR UPDATE")
     Song lock(Long id);
 
     @Select(
@@ -26,8 +26,8 @@ public interface SongMapper extends BaseMapper<Song> {
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
                 a.name AS artistName
-            FROM tb_song s
-            LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_song s
+            LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE
                 (#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
                 AND (#{artistName} IS NULL OR a.name LIKE CONCAT('%', #{artistName}, '%'))
@@ -53,8 +53,8 @@ public interface SongMapper extends BaseMapper<Song> {
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
                 a.name AS artistName
-            FROM tb_song s
-            LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_song s
+            LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE
                 (#{artistId} IS NULL OR s.artist_id = #{artistId})
                 AND(#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
@@ -78,8 +78,8 @@ public interface SongMapper extends BaseMapper<Song> {
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
                 a.name AS artistName
-            FROM tb_song s
-            LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_song s
+            LEFT JOIN music_artist a ON s.artist_id = a.id
             ORDER BY RAND() LIMIT 20
             """)
     List<SongVo> getRandomSongsWithArtist();
@@ -89,7 +89,7 @@ public interface SongMapper extends BaseMapper<Song> {
             SELECT s.id AS songId, s.name AS songName, s.album, s.lyric, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
                    a.name AS artistName
-            FROM tb_song s LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_song s LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE s.id = #{songId}
             """)
     SongDetailVo getSongDetailById(Long songId);
@@ -99,7 +99,7 @@ public interface SongMapper extends BaseMapper<Song> {
             SELECT s.id AS songId, s.name AS songName, s.album, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
                    a.name AS artistName
-            FROM tb_song s LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_song s LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE s.artist_id = #{artistId} ORDER BY s.id
             """)
     List<SongVo> listByArtist(Long artistId);
@@ -109,8 +109,8 @@ public interface SongMapper extends BaseMapper<Song> {
             SELECT s.id AS songId, s.name AS songName, s.album, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
                    a.name AS artistName
-            FROM tb_playlist_binding b JOIN tb_song s ON b.song_id = s.id
-            LEFT JOIN tb_artist a ON s.artist_id = a.id
+            FROM music_playlist_binding b JOIN music_song s ON b.song_id = s.id
+            LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE b.playlist_id = #{playlistId} ORDER BY s.id
             """)
     List<SongVo> listByPlaylist(Long playlistId);
@@ -127,8 +127,8 @@ public interface SongMapper extends BaseMapper<Song> {
                     s.audio_url AS audioUrl,
                     s.release_time AS releaseTime,
                     a.name AS artistName
-                    FROM tb_song s
-                    LEFT JOIN tb_artist a ON s.artist_id = a.id
+                    FROM music_song s
+                    LEFT JOIN music_artist a ON s.artist_id = a.id
 
                     WHERE
                     <if test="songIds != null and songIds.size() &gt; 0">
@@ -146,7 +146,7 @@ public interface SongMapper extends BaseMapper<Song> {
                     <if test="album != null and album.trim() != ''">
                         AND s.album LIKE CONCAT('%', #{album}, '%')
                     </if>
-                    ORDER BY (SELECT f.create_time FROM tb_user_favorite f WHERE f.song_id = s.id AND f.user_id = #{userId}) DESC
+                    ORDER BY (SELECT f.create_time FROM music_user_favorite f WHERE f.song_id = s.id AND f.user_id = #{userId}) DESC
             </script>
             """)
     IPage<SongVo> getSongsByIds(
@@ -161,7 +161,7 @@ public interface SongMapper extends BaseMapper<Song> {
             """
             <script>
             SELECT g.style_id
-                    FROM tb_genre g
+                    FROM music_genre g
                     WHERE g.song_id IN
                     <foreach item="item" collection="favoriteSongIds" open="(" separator="," close=")">
                         #{item}
@@ -176,10 +176,10 @@ public interface SongMapper extends BaseMapper<Song> {
             SELECT DISTINCT s.id AS songId, s.name AS songName, s.album,
                     s.duration, s.cover_url AS coverUrl, s.audio_url AS audioUrl,
                     s.release_time AS releaseTime, a.name AS artistName
-                    FROM tb_song s
-                    JOIN tb_genre g ON s.id = g.song_id
-                    JOIN tb_style st ON g.style_id = st.id
-                    LEFT JOIN tb_artist a ON s.artist_id = a.id
+                    FROM music_song s
+                    JOIN music_genre g ON s.id = g.song_id
+                    JOIN music_style st ON g.style_id = st.id
+                    LEFT JOIN music_artist a ON s.artist_id = a.id
                     WHERE g.style_id IN
                     <foreach item="item" collection="sortedStyleIds" open="(" separator="," close=")">
                         #{item}

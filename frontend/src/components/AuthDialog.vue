@@ -6,7 +6,7 @@ import { useUi } from '../stores/ui';
 import { api } from '../api';
 const auth = useAuth(),
   ui = useUi();
-const mail = import.meta.env.VITE_MAIL_ENABLED === 'true';
+const mail = import.meta.env.VITE_MAIL_ENABLED !== 'false';
 const email = ref(''),
   code = ref('');
 async function sendCode() {

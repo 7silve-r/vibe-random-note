@@ -8,6 +8,20 @@ const song = {
   collected: false,
 };
 const user = { id: 1, username: 'ADMIN', nickname: '管理员', role: 'ADMIN' };
+const poem = {
+  id: 1,
+  title: '相思',
+  author: '王维',
+  authorId: 1,
+  dynasty: '唐',
+  kind: '诗',
+  dataset: 'tang',
+  paragraphs: ['红豆生南国，春来发几枝。', '愿君多采撷，此物最相思。'],
+  excerpt: '愿君多采撷，此物最相思。',
+  sourceRef: '全唐诗/唐诗三百首.json',
+  sourceVersion: 'local',
+  collected: false,
+};
 async function setup(page: Page, login = false) {
   await page.addInitScript(
     ({ login }) => {
@@ -30,6 +44,13 @@ async function setup(page: Page, login = false) {
     if (path === '/api/login') data = 'test';
     else if (path === '/my/profile') data = user;
     else if (path === '/my/categories') data = [{ id: 1, cateName: '日常', cateAlias: 'daily' }];
+    else if (path === '/public/poetry/catalog')
+      data = {
+        collections: [{ code: 'tang', name: '唐诗', total: 1 }],
+        dynasties: ['唐'],
+        kinds: ['诗'],
+      };
+    else if (path.startsWith('/public/poetry/')) data = poem;
     else if (path.endsWith('listSongs')) data = { list: [song], total: 1 };
     else if (path.includes('getSongDetail')) data = { ...song, comments: [] };
     else if (path.endsWith('listArtistNames')) data = [{ artistId: 1, artistName: '测试歌手' }];
@@ -122,7 +143,7 @@ test('playback', async ({ page }) => {
   await page.route('**/test.wav', (r) => r.fulfill({ contentType: 'audio/wav', body: wav }));
   await page.goto('/music');
   await page.getByRole('button', { name: '播放 午后小调' }).click();
-  await expect(page.locator('.vinyl')).toHaveClass(/spinning/);
+  await expect(page.getByRole('button', { name: '展开或收起播放器' })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => (window as any).__audio.currentTime))
     .toBeGreaterThan(0.1);
@@ -274,13 +295,11 @@ test('poem mobile and motion', async ({ page }) => {
 test('poetry', async ({ page }) => {
   await setup(page);
   await page.goto('/');
-  const authors = new Set<string>();
-  for (let n = 0; n < 4; n++) {
-    authors.add((await page.locator('.poem-credit').innerText()).split(' ·')[0]);
-    await page.getByRole('button', { name: '换一签' }).click();
-  }
-  expect(authors.size).toBe(4);
-  await expect(page.locator('main a[href="/music"], main a[href="/diary"]')).toHaveCount(0);
+  await expect(page.locator('.poetry-feature')).toContainText('愿君多采撷');
+  await expect(page.getByRole('button', { name: '换一签' })).toHaveCount(0);
+  await page.getByRole('link', { name: '读完整首 →' }).click();
+  await expect(page).toHaveURL(/poetry\/1$/);
+  await expect(page.locator('.poem-lines')).toContainText('红豆生南国');
 });
 
 test('moment', async ({ page }) => {

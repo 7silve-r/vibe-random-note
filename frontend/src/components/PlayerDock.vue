@@ -71,12 +71,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', clamp));
     >
       <GripHorizontal :size="16" /></button
     ><button
-      class="vinyl"
-      :class="{ spinning: player.playing }"
+      class="player-cover"
+      :aria-expanded="expanded"
       aria-label="展开或收起播放器"
       @click="expand"
     >
-      <span class="vinyl-disc"><SmartImage :src="player.current.coverUrl" /><i /></span></button
+      <SmartImage
+        :src="player.current.coverUrl"
+        :alt="player.current.songName + '的专辑封面'"
+      /></button
     ><template v-if="expanded"
       ><div class="row">
         <div class="truncate">

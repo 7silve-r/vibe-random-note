@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("tb_style")
+@TableName("music_style")
 public class Style {
 
     @TableId(value = "id", type = IdType.AUTO)

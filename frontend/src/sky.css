@@ -194,7 +194,7 @@ select:focus-visible,
 .modal {
   background: linear-gradient(130deg, #f9fcfff5, #edf5fcf5);
 }
-.toast {
+.notice-message {
   background: #f5faffee;
 }
 .site-footer {
