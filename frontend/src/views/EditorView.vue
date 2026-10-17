@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSelect from '../components/AppSelect.vue';
 import StatePanel from '../components/StatePanel.vue';
 import { ref, watch, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
@@ -173,16 +174,25 @@ watch(() => [auth.user?.id, route.params.id, route.query.poem], init, { immediat
       >标题<input v-model="title" required maxlength="200" placeholder="给今天起个名字…"
     /></label>
     <div class="row wrap">
-      <select v-model="cateId" required aria-label="选择分类" style="flex: 1">
-        <option value="">选择分类</option>
-        <option v-for="c in categories" :key="c.id" :value="String(c.id)">
-          {{ c.cateName }}
-        </option></select
-      ><button type="button" @click="category">＋ 分类</button
-      ><select v-model="state" aria-label="可见性" style="flex: 1">
-        <option>私有</option>
-        <option>公开</option>
-      </select>
+      <AppSelect
+        v-model="cateId"
+        required
+        label="选择分类"
+        style="flex: 1"
+        :options="[
+          { value: '', label: '选择分类' },
+          ...categories.map((c) => ({ value: String(c.id), label: c.cateName })),
+        ]"
+      /><button type="button" @click="category">＋ 分类</button
+      ><AppSelect
+        v-model="state"
+        label="可见性"
+        style="flex: 1"
+        :options="[
+          { value: '私有', label: '私有' },
+          { value: '公开', label: '公开' },
+        ]"
+      />
     </div>
     <p class="muted tiny">
       {{

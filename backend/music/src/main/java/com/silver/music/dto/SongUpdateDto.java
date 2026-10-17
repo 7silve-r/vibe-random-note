@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -13,7 +14,13 @@ public class SongUpdateDto {
 
     @NotNull @Positive private Long songId;
 
-    @NotNull @Positive private Long artistId;
+    @Positive private Long artistId;
+
+    @Size(min = 1, max = 20)
+    private List<@NotNull @Positive Long> artistIds;
+
+    @Size(max = 30)
+    private List<@NotNull @Positive Long> styleIds;
 
     @NotBlank
     @Size(max = 100)

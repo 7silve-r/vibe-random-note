@@ -7,6 +7,10 @@ import { useUi } from '../stores/ui';
 import Modal from '../components/Modal.vue';
 import Pager from '../components/Pager.vue';
 import SmartImage from '../components/SmartImage.vue';
+import AppSelect from '../components/AppSelect.vue';
+import DateInput from '../components/DateInput.vue';
+import { normalizeDate } from '../utils/date';
+import { usePlayer } from '../stores/player';
 const auth = useAuth(),
   ui = useUi(),
   tab = ref('songs'),
@@ -41,10 +45,10 @@ const configs: Record<string, any> = {
     batch: 'deleteSongs',
     fields: [
       ['songName', '歌曲名称', 'text', true],
-      ['artistId', '歌手', 'artist', true],
-      ['album', '专辑', 'text'],
-      ['style', '风格（多个用英文逗号分隔）', 'text'],
-      ['releaseTime', '发行日期', 'date'],
+      ['artistIds', '歌手', 'artists', true],
+      ['album', '专辑', 'text', true],
+      ['styleIds', '风格', 'styles'],
+      ['releaseTime', '发行日期', 'date', true],
     ],
   },
   artists: {
@@ -153,13 +157,13 @@ function open(row?: any) {
   edit.value = row
     ? { ...row }
     : tab.value === 'songs'
-      ? { artistId: artists.value[0]?.artistId }
+      ? { artistIds: [], styleIds: [] }
       : tab.value === 'artists'
         ? { gender: 2 }
         : {};
   if (tab.value === 'songs' && row) {
-    const artist = artists.value.find((a) => a.artistName === row.artistName);
-    edit.value.artistId = artist?.artistId;
+    edit.value.artistIds = [...(row.artistIds || [])];
+    edit.value.styleIds = [...(row.styleIds || [])];
   }
   editing.value = true;
 }
@@ -169,8 +173,19 @@ async function save() {
   await ui.run(async () => {
     const exists = !!edit.value[config.value.key];
     const body: any = {};
-    for (const [key] of fields.value) body[key] = edit.value[key] || undefined;
-    if (edit.value.artistId) body.artistId = Number(edit.value.artistId);
+    for (const [key, label, type, required] of fields.value) {
+      const value = edit.value[key];
+      if (required && (value == null || value === '' || (Array.isArray(value) && !value.length)))
+        throw Error(`请填写${label}`);
+      if (type === 'date' && value) {
+        body[key] = normalizeDate(value);
+        if (!body[key]) throw Error(`${label}格式不正确`);
+      } else body[key] = value === '' || value == null ? undefined : value;
+    }
+    if (tab.value === 'songs') {
+      body.artistIds = edit.value.artistIds || [];
+      body.styleIds = edit.value.styleIds || [];
+    }
     if (tab.value === 'artists') body.gender = Number(edit.value.gender);
     if (exists) body[config.value.key] = edit.value[config.value.key];
     if (tab.value === 'users') {
@@ -266,10 +281,20 @@ async function sendFile() {
     const extra: Record<string, string> =
       uploadType.value === 'audio' ? { duration: await duration(file.value!) } : {};
     await upload(path, file.value!, method, extra);
+    if (uploadType.value === 'lyric' && usePlayer().current?.songId === id)
+      await usePlayer().loadLyrics();
     uploadRow.value = null;
     await load();
   }, '文件已上传');
   busy.value = false;
+}
+async function clearLyric(row: any) {
+  if (!(await ui.confirm('删除这首歌的歌词？音频仍会保留。'))) return;
+  await ui.run(async () => {
+    await api(`/music/admin/songs/${row.songId}/lyric`, 'DELETE');
+    if (usePlayer().current?.songId === row.songId) await usePlayer().loadLyrics();
+    await load();
+  }, '歌词已删除');
 }
 async function bind(row: any) {
   await ui.run(async () => {
@@ -426,6 +451,9 @@ watch(
                     >
                       封面</button
                     ><button v-if="tab === 'songs'" @click="pickUpload(row, 'audio')">音频</button
+                    ><button v-if="tab === 'songs'" @click="pickUpload(row, 'lyric')">歌词</button
+                    ><button v-if="tab === 'songs' && row.lyric" @click="clearLyric(row)">
+                      删除歌词</button
                     ><button v-if="tab === 'artists'" @click="pickUpload(row, 'avatar')">
                       头像</button
                     ><button v-if="tab === 'playlists'" @click="bind(row)">管理歌曲</button
@@ -471,15 +499,33 @@ watch(
     ><form class="form" @submit.prevent="save">
       <label v-for="[key, label, type, required] in fields" :key="key"
         >{{ label
-        }}<select v-if="type === 'artist'" v-model="edit[key]" :aria-label="label" required>
-          <option v-for="a in artists" :key="a.artistId" :value="a.artistId">
-            {{ a.artistName }}
-          </option></select
-        ><select v-else-if="type === 'gender'" v-model="edit[key]" :aria-label="label">
-          <option :value="0">女</option>
-          <option :value="1">男</option>
-          <option :value="2">组合 / 其他</option></select
-        ><textarea
+        }}<AppSelect
+          v-if="type === 'artists' || type === 'styles'"
+          v-model="edit[key]"
+          :label="label"
+          :required="!!required"
+          multiple
+          searchable
+          :options="
+            type === 'artists'
+              ? artists.map((a) => ({ value: a.artistId, label: a.artistName }))
+              : styles.map((s) => ({ value: s.styleId, label: s.name }))
+          " />
+        <AppSelect
+          v-else-if="type === 'gender'"
+          v-model="edit[key]"
+          :label="label"
+          :options="[
+            { value: 0, label: '女' },
+            { value: 1, label: '男' },
+            { value: 2, label: '组合 / 其他' },
+          ]" />
+        <DateInput
+          v-else-if="type === 'date'"
+          v-model="edit[key]"
+          :label="label"
+          :required="!!required" />
+        <textarea
           v-else-if="type === 'textarea'"
           v-model="edit[key]"
           :aria-label="label"
@@ -500,10 +546,21 @@ watch(
   ><Modal v-if="uploadRow" title="上传资源" @close="uploadRow = null"
     ><form class="form" @submit.prevent="sendFile">
       <label
-        >{{ uploadType === 'audio' ? '音频文件（最大 50 MB）' : '图片文件（最大 5 MB）'
+        >{{
+          uploadType === 'lyric'
+            ? '歌词文件（UTF-8，最大 60 KB）'
+            : uploadType === 'audio'
+              ? '音频文件（最大 50 MB）'
+              : '图片文件（最大 5 MB）'
         }}<input
           type="file"
-          :accept="uploadType === 'audio' ? 'audio/*' : 'image/png,image/jpeg'"
+          :accept="
+            uploadType === 'lyric'
+              ? '.lrc,.txt'
+              : uploadType === 'audio'
+                ? 'audio/*'
+                : 'image/png,image/jpeg'
+          "
           required
           @change="file = ($event.target as HTMLInputElement).files?.[0]" /></label
       ><button class="primary" :disabled="busy">{{ busy ? '正在上传…' : '上传' }}</button>

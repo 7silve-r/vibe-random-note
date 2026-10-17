@@ -58,8 +58,14 @@ export async function upload(
   values: Record<string, string> = {},
 ) {
   const audio = /\/songs\/[^/]+\/audio$/.test(path);
-  const limit = (audio ? 50 : 5) * 1024 * 1024;
-  if (file.size > limit) throw new ApiError(audio ? '音频不能超过50MB' : '图片不能超过5MB', 413);
+  const lyric = /\/songs\/[^/]+\/lyric$/.test(path);
+  const limit = lyric ? 60000 : (audio ? 50 : 5) * 1024 * 1024;
+  if (file.size > limit)
+    throw new ApiError(
+      lyric ? '歌词不能超过60KB' : audio ? '音频不能超过50MB' : '图片不能超过5MB',
+      413,
+    );
+  if (lyric && !/\.(lrc|txt)$/i.test(file.name)) throw new ApiError('请选择 LRC 或 TXT 歌词文件');
   const data = new FormData();
   data.append('file', file);
   Object.entries(values).forEach(([k, v]) => data.append(k, v));

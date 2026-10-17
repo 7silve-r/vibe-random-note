@@ -1,0 +1,101 @@
+.app-select {
+  position: relative;
+  min-width: 0;
+}
+.select-trigger {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  background: #edf4fb9c;
+  border: 1px solid #9aafc43d;
+  border-radius: 12px;
+  color: var(--ink);
+}
+.select-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger > svg {
+  flex-shrink: 0;
+}
+.select-menu {
+  z-index: 120;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border-radius: 16px;
+  background: #eaf2fbf5;
+  backdrop-filter: blur(20px);
+  border: 1px solid #a9bdd275;
+  box-shadow: 0 14px 40px #3a52632b;
+  color: var(--ink);
+}
+.select-menu > input {
+  width: 100%;
+  margin-bottom: 8px;
+  background: #ffffff55;
+}
+.select-menu [role='option'] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  padding: 10px 12px;
+  transform: none;
+}
+.select-menu [role='option'] span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.select-menu [role='option'].focused {
+  background: #d8e5f39c;
+}
+.select-menu [role='option'][aria-selected='true'] {
+  background: #e5dceaab;
+  color: #705b78;
+}
+.select-menu input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: #9a7da9;
+  pointer-events: none;
+}
+.select-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.select-tags button {
+  padding: 4px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e6ddec9c;
+  border: 0;
+}
+.select-validity {
+  position: absolute;
+  width: 1px !important;
+  height: 1px;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  bottom: 0;
+  left: 0;
+}
+.toolbar > .app-select {
+  min-width: 140px;
+}

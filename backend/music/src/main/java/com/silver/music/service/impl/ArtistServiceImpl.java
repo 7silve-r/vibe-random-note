@@ -13,6 +13,7 @@ import com.silver.music.dto.ArtistUpdateDto;
 import com.silver.music.entity.Artist;
 import com.silver.music.entity.UserFavorite;
 import com.silver.music.mapper.ArtistMapper;
+import com.silver.music.mapper.SongArtistMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
 import com.silver.music.service.ArtistService;
@@ -35,6 +36,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
 
     @Autowired private ArtistMapper artistMapper;
     @Autowired private SongMapper songMapper;
+    @Autowired private SongArtistMapper songArtists;
     @Autowired private UserFavoriteMapper userFavoriteMapper;
     @Autowired private FileStorage fileStorage;
 
@@ -226,6 +228,9 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
     @Override
     @Transactional
     public void deleteArtist(Long artistId) {
+        songArtists.lockArtist(artistId);
+        if (songArtists.countSongs(artistId) > 0)
+            throw new BusinessException("该歌手仍有关联歌曲，请先调整歌曲的歌手");
 
         Artist artist = artistMapper.selectById(artistId);
         if (artist == null) {
@@ -245,6 +250,10 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
     @Override
     @Transactional
     public void deleteArtists(List<Long> artistIds) {
+        for (Long id : artistIds.stream().distinct().sorted().toList()) {
+            songArtists.lockArtist(id);
+            if (songArtists.countSongs(id) > 0) throw new BusinessException("所选歌手仍有关联歌曲，请先调整歌曲的歌手");
+        }
 
         List<Artist> artists = artistMapper.selectByIds(artistIds);
         List<String> avatarUrlList =

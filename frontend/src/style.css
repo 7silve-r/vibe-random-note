@@ -761,15 +761,7 @@ a.content-item:hover {
   margin-top: 28px;
   font-size: 12px;
 }
-.player-dock {
-  position: fixed;
-  z-index: 15;
-  width: 86px;
-  padding: 5px 10px 12px;
-  border-radius: 25px;
-  max-width: calc(100vw - 16px);
-  background: #ffffff92;
-}
+
 .drag-handle {
   display: flex;
   margin: auto;
@@ -780,48 +772,7 @@ a.content-item:hover {
   touch-action: none;
   cursor: grab;
 }
-.player-cover {
-  width: 64px;
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 8px;
-  padding: 0;
-  overflow: hidden;
-  display: block;
-  background: #e7edf3;
-  box-shadow: 0 4px 14px #30486124;
-}
-.player-cover:hover:not(:disabled) {
-  transform: none;
-  background: #e7edf3;
-}
-.player-cover img,
-.player-cover .image-fallback {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0;
-  font-size: 28px;
-}
-.player-dock.expanded {
-  width: 266px;
-  padding: 10px 20px 18px;
-}
-.expanded .player-cover {
-  margin: 6px auto 18px;
-  width: 160px;
-  max-width: 100%;
-}
-.player-dock strong {
-  font-size: 14px;
-  font-weight: 400;
-}
-.player-dock > .row button {
-  padding: 4px;
-  background: none;
-  border: 0;
-}
+
 .controls {
   display: flex;
   justify-content: center;
@@ -857,13 +808,7 @@ a.content-item:hover {
   text-align: left;
   margin-top: 4px;
 }
-.player-restore {
-  position: fixed;
-  right: 18px;
-  bottom: 30px;
-  z-index: 15;
-  background: #ffffffb8;
-}
+
 .markdown {
   line-height: 2;
   overflow-wrap: anywhere;
@@ -1833,14 +1778,6 @@ select:focus {
 .editor-grid .markdown {
   padding-left: 22px;
   border-left: 1px solid #bcaaca38;
-}
-
-.player-dock:not(.expanded) {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 @media (max-width: 900px) {

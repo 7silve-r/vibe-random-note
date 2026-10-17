@@ -54,6 +54,7 @@ def run(sql):
     return result.stdout
 
 known = [
+    "music_song_artist",
     "poetry_favorite",
     "poetry_poem",
     "poetry_author",

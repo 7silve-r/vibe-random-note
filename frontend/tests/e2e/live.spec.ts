@@ -1,3 +1,4 @@
+import { select } from './select';
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'node:crypto';
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
@@ -24,7 +25,7 @@ test('live diary', async ({ page, request }) => {
     await page.goto('/diary/write');
     await page.getByLabel('标题', { exact: true }).fill('浏览器联调 ' + username);
     await page.getByLabel('书写', { exact: true }).fill('# 联调\n\n真实服务记录');
-    await page.getByLabel('选择分类').selectOption({ label: '浏览器测试' });
+    await select(page, '选择分类', '浏览器测试');
     await page.getByRole('button', { name: '保存日记', exact: true }).click();
     await expect(page).toHaveURL(/diary\?tab=mine/);
     await page.getByRole('link', { name: new RegExp('浏览器联调 ' + username) }).click();
@@ -34,7 +35,7 @@ test('live diary', async ({ page, request }) => {
     const privateRead = await request.get('/backend/public/articles/' + id);
     expect(privateRead.ok()).toBe(false);
     await page.getByRole('button', { name: '编辑日记', exact: true }).click();
-    await page.getByLabel('可见性').selectOption('公开');
+    await select(page, '可见性', '公开');
     await page.getByRole('button', { name: '保存日记', exact: true }).click();
     await expect(page).toHaveURL(/diary\?tab=mine/);
     const publicRead = await request.get('/backend/public/articles/' + id);

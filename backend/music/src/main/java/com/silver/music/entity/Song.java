@@ -23,6 +23,7 @@ public class Song {
     private String album;
 
     private String lyric;
+    private String lyricUrl;
 
     private String duration;
 

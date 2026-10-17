@@ -1,3 +1,4 @@
+import { select } from './select';
 import { test, expect, Page } from '@playwright/test';
 const song = {
   songId: 1,
@@ -102,17 +103,19 @@ test('login', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '管理中心' })).toBeVisible();
   await page.getByRole('button', { name: '新建歌曲' }).click();
   await page.getByLabel('歌曲名称').fill('新歌曲');
-  await page.getByLabel('歌手', { exact: true }).selectOption('1');
+  await select(page, '歌手', '测试歌手');
+  await page.getByLabel('专辑', { exact: true }).fill('测试专辑');
+  await page.getByLabel('发行日期').fill('2026-10-17');
   const request = page.waitForRequest((r) => r.url().includes('/addSong'));
   await page.getByRole('button', { name: '保存', exact: true }).click();
-  expect((await request).postDataJSON().artistId).toBe(1);
+  expect((await request).postDataJSON().artistIds).toEqual([1]);
 });
 test('draft', async ({ page }) => {
   await setup(page, true);
   await page.goto('/diary/write');
   await page.getByLabel('标题', { exact: true }).fill('我的一天');
   await page.getByLabel('书写', { exact: true }).fill('# 今天\n\n**开心**');
-  await page.getByLabel('选择分类').selectOption('1');
+  await select(page, '选择分类', '日常');
   await expect(page.locator('.markdown strong')).toHaveText('开心');
   await page.reload();
   await page.getByRole('button', { name: '恢复草稿' }).click();
@@ -143,7 +146,7 @@ test('playback', async ({ page }) => {
   await page.route('**/test.wav', (r) => r.fulfill({ contentType: 'audio/wav', body: wav }));
   await page.goto('/music');
   await page.getByRole('button', { name: '播放 午后小调' }).click();
-  await expect(page.getByRole('button', { name: '展开或收起播放器' })).toBeVisible();
+  await expect(page.getByLabel('悬浮歌词', { exact: true })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => (window as any).__audio.currentTime))
     .toBeGreaterThan(0.1);
@@ -152,11 +155,13 @@ test('playback', async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => (window as any).__audio.currentTime))
     .toBeGreaterThan(before);
-  await page.getByRole('button', { name: '展开或收起播放器' }).click();
-  await page.getByRole('button', { name: '暂停', exact: true }).click();
+  await page
+    .getByLabel('悬浮歌词', { exact: true })
+    .getByRole('button', { name: '暂停', exact: true })
+    .click();
   expect(await page.evaluate(() => (window as any).__audio.paused)).toBe(true);
-  await page.getByRole('button', { name: '隐藏小窗' }).click();
-  await page.getByRole('button', { name: '恢复音乐小窗' }).click();
+  await page.getByRole('button', { name: '隐藏歌词' }).click();
+  await page.getByRole('button', { name: '显示悬浮歌词' }).click();
   await expect(page.getByRole('button', { name: '播放', exact: true })).toBeVisible();
 });
 test('mobile', async ({ page }) => {
@@ -390,10 +395,10 @@ test('playlist styles', async ({ page }) => {
   await page.getByRole('button', { name: '歌单', exact: true }).click();
   await expect(page.getByText('流行歌单', { exact: true })).toBeVisible();
   await expect(page.getByText('摇滚歌单', { exact: true })).toBeVisible();
-  await page.getByLabel('音乐风格').selectOption({ label: '流行' });
+  await select(page, '音乐风格', '流行');
   await page.getByRole('button', { name: '搜索', exact: true }).click();
   await expect(page.getByText('摇滚歌单', { exact: true })).toHaveCount(0);
-  await page.getByLabel('音乐风格').selectOption('');
+  await select(page, '音乐风格', '全部风格');
   await page.getByRole('button', { name: '搜索', exact: true }).click();
   await expect(page.getByText('摇滚歌单', { exact: true })).toBeVisible();
   expect(filters[0]).toBeUndefined();

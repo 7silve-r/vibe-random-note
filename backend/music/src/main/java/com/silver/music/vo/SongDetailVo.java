@@ -17,6 +17,10 @@ public class SongDetailVo {
     private String album;
 
     private String lyric;
+    private String lyricUrl;
+    private List<Long> artistIds;
+    private List<ArtistNameVo> artists;
+    private List<Long> styleIds;
 
     private String duration;
 

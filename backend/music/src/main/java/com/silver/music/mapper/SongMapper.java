@@ -17,7 +17,7 @@ public interface SongMapper extends BaseMapper<Song> {
 
     @Select(
             """
-            SELECT
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */
                 s.id AS songId,
                 s.name AS songName,
                 s.album,
@@ -25,12 +25,12 @@ public interface SongMapper extends BaseMapper<Song> {
                 s.cover_url AS coverUrl,
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
-                a.name AS artistName
+                COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_song s
             LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE
                 (#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
-                AND (#{artistName} IS NULL OR a.name LIKE CONCAT('%', #{artistName}, '%'))
+                AND (#{artistName} IS NULL OR (a.name LIKE CONCAT('%', #{artistName}, '%') OR EXISTS (SELECT 1 FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id AND ma.name LIKE CONCAT('%', #{artistName}, '%'))))
                 AND (#{album} IS NULL OR s.album LIKE CONCAT('%', #{album}, '%'))
             """)
     IPage<SongVo> getSongsWithArtist(
@@ -41,22 +41,22 @@ public interface SongMapper extends BaseMapper<Song> {
 
     @Select(
             """
-            SELECT
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */
                 s.id AS songId,
                 s.name AS songName,
                 s.artist_id AS artistId,
                 s.album,
-                s.lyric,
+                s.lyric, s.lyric_url AS lyricUrl,
                 s.duration,
                 s.style,
                 s.cover_url AS coverUrl,
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
-                a.name AS artistName
+                COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_song s
             LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE
-                (#{artistId} IS NULL OR s.artist_id = #{artistId})
+                (#{artistId} IS NULL OR (s.artist_id = #{artistId} OR EXISTS (SELECT 1 FROM music_song_artist sa WHERE sa.song_id=s.id AND sa.artist_id=#{artistId})))
                 AND(#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
                 AND (#{album} IS NULL OR s.album LIKE CONCAT('%', #{album}, '%'))
             ORDER BY s.release_time DESC
@@ -69,7 +69,7 @@ public interface SongMapper extends BaseMapper<Song> {
 
     @Select(
             """
-            SELECT
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */
                 s.id AS songId,
                 s.name AS songName,
                 s.album,
@@ -77,7 +77,7 @@ public interface SongMapper extends BaseMapper<Song> {
                 s.cover_url AS coverUrl,
                 s.audio_url AS audioUrl,
                 s.release_time AS releaseTime,
-                a.name AS artistName
+                COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_song s
             LEFT JOIN music_artist a ON s.artist_id = a.id
             ORDER BY RAND() LIMIT 20
@@ -86,9 +86,9 @@ public interface SongMapper extends BaseMapper<Song> {
 
     @Select(
             """
-            SELECT s.id AS songId, s.name AS songName, s.album, s.lyric, s.duration,
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */ s.id AS songId, s.name AS songName, s.album, s.lyric, s.lyric_url AS lyricUrl, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
-                   a.name AS artistName
+                   COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_song s LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE s.id = #{songId}
             """)
@@ -96,19 +96,19 @@ public interface SongMapper extends BaseMapper<Song> {
 
     @Select(
             """
-            SELECT s.id AS songId, s.name AS songName, s.album, s.duration,
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */ s.id AS songId, s.name AS songName, s.album, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
-                   a.name AS artistName
+                   COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_song s LEFT JOIN music_artist a ON s.artist_id = a.id
-            WHERE s.artist_id = #{artistId} ORDER BY s.id
+            WHERE (s.artist_id = #{artistId} OR EXISTS (SELECT 1 FROM music_song_artist sa WHERE sa.song_id=s.id AND sa.artist_id=#{artistId})) ORDER BY s.id
             """)
     List<SongVo> listByArtist(Long artistId);
 
     @Select(
             """
-            SELECT s.id AS songId, s.name AS songName, s.album, s.duration,
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */ s.id AS songId, s.name AS songName, s.album, s.duration,
                    s.cover_url AS coverUrl, s.audio_url AS audioUrl, s.release_time AS releaseTime,
-                   a.name AS artistName
+                   COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
             FROM music_playlist_binding b JOIN music_song s ON b.song_id = s.id
             LEFT JOIN music_artist a ON s.artist_id = a.id
             WHERE b.playlist_id = #{playlistId} ORDER BY s.id
@@ -118,7 +118,7 @@ public interface SongMapper extends BaseMapper<Song> {
     @Select(
             """
             <script>
-            SELECT
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */
                     s.id AS songId,
                     s.name AS songName,
                     s.album,
@@ -126,7 +126,7 @@ public interface SongMapper extends BaseMapper<Song> {
                     s.cover_url AS coverUrl,
                     s.audio_url AS audioUrl,
                     s.release_time AS releaseTime,
-                    a.name AS artistName
+                    COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
                     FROM music_song s
                     LEFT JOIN music_artist a ON s.artist_id = a.id
 
@@ -141,7 +141,7 @@ public interface SongMapper extends BaseMapper<Song> {
                         AND s.name LIKE CONCAT('%', #{songName}, '%')
                     </if>
                     <if test="artistName != null and artistName.trim() != ''">
-                        AND a.name LIKE CONCAT('%', #{artistName}, '%')
+                        AND (a.name LIKE CONCAT('%', #{artistName}, '%') OR EXISTS (SELECT 1 FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id AND ma.name LIKE CONCAT('%', #{artistName}, '%')))
                     </if>
                     <if test="album != null and album.trim() != ''">
                         AND s.album LIKE CONCAT('%', #{album}, '%')
@@ -173,9 +173,9 @@ public interface SongMapper extends BaseMapper<Song> {
     @Select(
             """
             <script>
-            SELECT DISTINCT s.id AS songId, s.name AS songName, s.album,
+            SELECT /*+ SET_VAR(group_concat_max_len=16384) */ DISTINCT s.id AS songId, s.name AS songName, s.album,
                     s.duration, s.cover_url AS coverUrl, s.audio_url AS audioUrl,
-                    s.release_time AS releaseTime, a.name AS artistName
+                    s.release_time AS releaseTime, COALESCE((SELECT GROUP_CONCAT(ma.name ORDER BY sa.position SEPARATOR ' / ') FROM music_song_artist sa JOIN music_artist ma ON ma.id=sa.artist_id WHERE sa.song_id=s.id), a.name) AS artistName
                     FROM music_song s
                     JOIN music_genre g ON s.id = g.song_id
                     JOIN music_style st ON g.style_id = st.id

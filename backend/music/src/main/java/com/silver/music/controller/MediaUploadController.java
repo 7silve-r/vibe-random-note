@@ -6,6 +6,7 @@ import com.silver.music.service.*;
 import com.silver.storage.model.UploadResult;
 import com.silver.storage.model.UploadTarget;
 import com.silver.storage.service.FileUploadService;
+import com.silver.storage.validation.LyricFile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,6 +50,25 @@ public class MediaUploadController {
         return Result.success(
                 uploads.upload(
                         file, UploadTarget.SONG_COVER, url -> songs.updateSongCover(id, url)));
+    }
+
+    @PutMapping(value = "/music/admin/songs/{id}/lyric", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<UploadResult> songLyric(
+            @PathVariable("id") Long id, @RequestParam("file") MultipartFile file) {
+        String lyric = LyricFile.read(file);
+        return Result.success(
+                uploads.upload(
+                        file,
+                        UploadTarget.SONG_LYRIC,
+                        url -> songs.updateSongLyric(id, url, lyric)));
+    }
+
+    @DeleteMapping("/music/admin/songs/{id}/lyric")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteLyric(@PathVariable("id") Long id) {
+        songs.updateSongLyric(id, null, null);
+        return Result.success();
     }
 
     @PutMapping(value = "/music/admin/songs/{id}/audio", consumes = "multipart/form-data")

@@ -10,6 +10,9 @@ import SongList from '../components/SongList.vue';
 import SmartImage from '../components/SmartImage.vue';
 import Pager from '../components/Pager.vue';
 import Comments from '../components/Comments.vue';
+import AppSelect from '../components/AppSelect.vue';
+import PlayerControls from '../components/PlayerControls.vue';
+import LyricReader from '../components/LyricReader.vue';
 const route = useRoute(),
   auth = useAuth(),
   ui = useUi(),
@@ -137,6 +140,7 @@ ui.run(async () => {
     </div>
     <RouterLink v-if="id" to="/music"><button>返回音乐</button></RouterLink>
   </header>
+  <PlayerControls />
   <StatePanel v-if="error" mood="error">
     <p role="alert">{{ error }}</p>
     <button @click="load">重新加载</button>
@@ -151,6 +155,14 @@ ui.run(async () => {
         }}</span>
         <h1>{{ detail.songName || detail.title || detail.artistName }}</h1>
         <p>{{ detail.artistName }} {{ detail.album ? ' / ' + detail.album : '' }}</p>
+        <div v-if="kind === 'song' && detail.artists?.length" class="song-artists">
+          <RouterLink
+            v-for="artist in detail.artists"
+            :key="artist.artistId"
+            :to="`/music/artist/${artist.artistId}`"
+            >{{ artist.artistName }}</RouterLink
+          >
+        </div>
         <p>{{ detail.introduction }}</p>
         <div class="actions">
           <button
@@ -172,7 +184,7 @@ ui.run(async () => {
     </section>
     <section v-if="kind === 'song'" class="panel">
       <h2>歌词</h2>
-      <div class="lyric">{{ detail.lyric || '这首歌还没有歌词。让旋律替它说话。' }}</div>
+      <LyricReader :song="detail" />
     </section>
     <section v-else class="panel">
       <SongList :songs="detail.songs || []" @refresh="load" />
@@ -208,11 +220,16 @@ ui.run(async () => {
         load();
       "
     >
-      <select v-if="['songs', 'favorites'].includes(tab)" v-model="searchBy" aria-label="搜索条件">
-        <option value="songName">歌曲名</option>
-        <option value="artistName">歌手名</option>
-        <option value="album">专辑名</option></select
-      ><input
+      <AppSelect
+        v-if="['songs', 'favorites'].includes(tab)"
+        v-model="searchBy"
+        label="搜索条件"
+        :options="[
+          { value: 'songName', label: '歌曲名' },
+          { value: 'artistName', label: '歌手名' },
+          { value: 'album', label: '专辑名' },
+        ]"
+      /><input
         v-model="search"
         :placeholder="
           tab === 'artists'
@@ -222,10 +239,15 @@ ui.run(async () => {
               : '搜索歌曲'
         "
         aria-label="搜索音乐"
-      /><select v-if="tab === 'playlists'" v-model="style" aria-label="音乐风格">
-        <option value="">全部风格</option>
-        <option v-for="s in styles" :key="s.styleId">{{ s.name }}</option></select
-      ><button>搜索</button>
+      /><AppSelect
+        v-if="tab === 'playlists'"
+        v-model="style"
+        label="音乐风格"
+        :options="[
+          { value: '', label: '全部风格' },
+          ...styles.map((s) => ({ value: s.name, label: s.name })),
+        ]"
+      /><button>搜索</button>
     </form>
     <section v-if="['songs', 'recommended', 'favorites'].includes(tab)" class="panel">
       <SongList :songs="rows" @refresh="load" />

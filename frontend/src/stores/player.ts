@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { media } from '../api';
+import { api, media } from '../api';
+import { parseLyrics, lyricIndex } from '../utils/lyrics';
 import { useUi } from './ui';
 export interface Song {
   songId: number;
@@ -22,6 +23,28 @@ export const usePlayer = defineStore('player', () => {
     mode = ref<'order' | 'repeat' | 'shuffle'>('order'),
     hidden = ref(false);
   const current = computed(() => queue.value[index.value]);
+  const lyric = ref(''),
+    lyricLoading = ref(false),
+    lyricError = ref('');
+  const lyrics = computed(() => parseLyrics(lyric.value));
+  const activeLyric = computed(() => lyricIndex(lyrics.value.lines, time.value));
+  let lyricRequest = 0;
+  async function loadLyrics() {
+    const id = current.value?.songId;
+    if (!id) return;
+    const ticket = ++lyricRequest;
+    lyricLoading.value = true;
+    lyricError.value = '';
+    try {
+      const result = await api<{ lyric?: string }>(`/music/public/song/${id}/lyrics`);
+      if (ticket === lyricRequest && current.value?.songId === id)
+        lyric.value = result?.lyric || '';
+    } catch (error) {
+      if (ticket === lyricRequest) lyricError.value = (error as Error).message;
+    } finally {
+      if (ticket === lyricRequest) lyricLoading.value = false;
+    }
+  }
   let request = 0;
   audio.volume = volume.value;
   audio.addEventListener('play', () => (playing.value = true));
@@ -55,6 +78,7 @@ export const usePlayer = defineStore('player', () => {
     }
     hidden.value = false;
     if (current.value?.songId === song.songId && audio.src === media(song.audioUrl)) {
+      if (lyricError.value) void loadLyrics();
       await resume();
       return;
     }
@@ -68,6 +92,8 @@ export const usePlayer = defineStore('player', () => {
       index.value = queue.value.length - 1;
     }
     time.value = 0;
+    lyric.value = '';
+    void loadLyrics();
     duration.value = 0;
     audio.src = media(song.audioUrl);
     if (ticket === request) await resume();
@@ -100,6 +126,11 @@ export const usePlayer = defineStore('player', () => {
   }
   return {
     queue,
+    lyrics,
+    activeLyric,
+    lyricLoading,
+    lyricError,
+    loadLyrics,
     index,
     playing,
     time,

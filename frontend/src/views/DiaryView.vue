@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSelect from '../components/AppSelect.vue';
 import StatePanel from '../components/StatePanel.vue';
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -111,28 +112,30 @@ load();
     ><button v-if="auth.user" @click="categoryOpen = true">管理分类</button>
   </div>
   <div v-if="tab === 'mine'" class="toolbar">
-    <select
+    <AppSelect
       v-model="state"
-      aria-label="日记可见性"
+      label="日记可见性"
       @change="
         page = 1;
         load();
       "
-    >
-      <option value="">全部状态</option>
-      <option>私有</option>
-      <option>公开</option></select
-    ><select
+      :options="[
+        { value: '', label: '全部状态' },
+        { value: '私有', label: '私有' },
+        { value: '公开', label: '公开' },
+      ]"
+    /><AppSelect
       v-model="cate"
-      aria-label="日记分类"
+      label="日记分类"
       @change="
         page = 1;
         load();
       "
-    >
-      <option value="">全部分类</option>
-      <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.cateName }}</option>
-    </select>
+      :options="[
+        { value: '', label: '全部分类' },
+        ...categories.map((c) => ({ value: c.id, label: c.cateName })),
+      ]"
+    />
   </div>
   <StatePanel v-if="loading" mood="loading" text="正在加载日记…" />
   <StatePanel v-else-if="error" mood="error">

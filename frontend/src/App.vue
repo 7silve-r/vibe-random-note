@@ -16,7 +16,7 @@ import { useUi } from './stores/ui';
 import AuthDialog from './components/AuthDialog.vue';
 import SmartImage from './components/SmartImage.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
-import PlayerDock from './components/PlayerDock.vue';
+import LyricOverlay from './components/LyricOverlay.vue';
 import CharacterIcon from './components/CharacterIcon.vue';
 import NoticeStream from './components/NoticeStream.vue';
 import StatePanel from './components/StatePanel.vue';
@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
       <RouterView v-if="auth.ready" />
       <StatePanel v-else mood="loading" text="正在加载…" />
     </main>
-    <PlayerDock />
+    <LyricOverlay />
     <footer class="site-footer">
       <span>VIBE RANDOM NOTES</span><span>音乐 / 日记 / 诗词</span><span aria-hidden="true">✧</span>
     </footer>

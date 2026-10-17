@@ -1,6 +1,7 @@
 package com.silver.music.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -17,10 +18,12 @@ import com.silver.music.entity.Style;
 import com.silver.music.entity.UserFavorite;
 import com.silver.music.mapper.CommentMapper;
 import com.silver.music.mapper.GenreMapper;
+import com.silver.music.mapper.SongArtistMapper;
 import com.silver.music.mapper.SongMapper;
 import com.silver.music.mapper.StyleMapper;
 import com.silver.music.mapper.UserFavoriteMapper;
 import com.silver.music.service.SongService;
+import com.silver.music.vo.ArtistNameVo;
 import com.silver.music.vo.SongAdminVo;
 import com.silver.music.vo.SongDetailVo;
 import com.silver.music.vo.SongVo;
@@ -38,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements SongService {
 
     @Autowired private SongMapper songMapper;
+    @Autowired private SongArtistMapper songArtists;
     @Autowired private CommentMapper commentMapper;
     @Autowired private UserFavoriteMapper userFavoriteMapper;
     @Autowired private StyleMapper styleMapper;
@@ -86,6 +90,15 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
                 songMapper.getSongsWithArtistName(
                         page, songDto.getArtistId(), songDto.getSongName(), songDto.getAlbum());
 
+        songPage.getRecords()
+                .forEach(
+                        row -> {
+                            var artists = songArtists.list(row.getSongId());
+                            row.setArtists(artists);
+                            row.setArtistIds(
+                                    artists.stream().map(ArtistNameVo::getArtistId).toList());
+                            row.setStyleIds(songArtists.styles(row.getSongId()));
+                        });
         return new PageResult<>(songPage.getTotal(), songPage.getRecords());
     }
 
@@ -145,6 +158,10 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
     public SongDetailVo getSongDetail(Long songId) {
         SongDetailVo songDetailVo = songMapper.getSongDetailById(songId);
         if (songDetailVo == null) throw new BusinessException(404, "歌曲不存在");
+        songDetailVo.setArtists(songArtists.list(songId));
+        songDetailVo.setArtistIds(
+                songDetailVo.getArtists().stream().map(ArtistNameVo::getArtistId).toList());
+        songDetailVo.setStyleIds(songArtists.styles(songId));
         songDetailVo.setComments(commentMapper.listByTarget(songId, 0));
         songDetailVo.setCollected(false);
 
@@ -176,69 +193,99 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         return songMapper.selectCount(query);
     }
 
-    @Override
-    @Transactional
-    public void addSong(SongAddDto songAddDto) {
-        Song song = new Song();
-        BeanUtils.copyProperties(songAddDto, song);
+    private List<Long> artistIds(List<Long> ids, Long legacy) {
+        List<Long> selected = ids != null ? ids : legacy == null ? List.of() : List.of(legacy);
+        if (selected.isEmpty()
+                || selected.size() > 20
+                || selected.stream().anyMatch(id -> id == null || id <= 0))
+            throw new BusinessException("请选择1到20位歌手");
+        var distinct = selected.stream().distinct().toList();
+        for (Long id : distinct.stream().sorted().toList())
+            if (songArtists.lockArtist(id) == null) throw new BusinessException("所选歌手不存在");
+        return distinct;
+    }
 
-        if (songMapper.insert(song) == 0) {
-            throw new BusinessException("添加失败");
+    private List<Style> styles(List<Long> ids, String legacy) {
+        if (ids != null) {
+            if (ids.size() > 30 || ids.stream().anyMatch(id -> id == null || id <= 0))
+                throw new BusinessException("风格选择不正确");
+            var distinct = ids.stream().distinct().toList();
+            if (distinct.isEmpty()) return List.of();
+            var found = styleMapper.selectByIds(distinct);
+            if (found.size() != distinct.size()) throw new BusinessException("所选风格不存在");
+            return found;
         }
+        if (legacy == null || legacy.isBlank()) return List.of();
+        var names =
+                Arrays.stream(legacy.split(","))
+                        .map(String::strip)
+                        .filter(s -> !s.isEmpty())
+                        .distinct()
+                        .toList();
+        if (names.isEmpty()) return List.of();
+        var found =
+                styleMapper.selectList(new LambdaQueryWrapper<Style>().in(Style::getName, names));
+        if (found.size() != names.size()) throw new BusinessException("请从已有风格中选择");
+        return found;
+    }
 
-        Long songId = song.getSongId();
-
-        String styleStr = songAddDto.getStyle();
-        if (styleStr != null && !styleStr.isEmpty()) {
-            List<String> styles = Arrays.asList(styleStr.split(","));
-
-            List<Style> styleList =
-                    styleMapper.selectList(
-                            new LambdaQueryWrapper<Style>().in(Style::getName, styles));
-
-            for (Style style : styleList) {
-                Genre genre = new Genre();
-                genre.setSongId(songId);
-                genre.setStyleId(style.getStyleId());
-                genreMapper.insert(genre);
-            }
+    private void associations(Long songId, List<Long> artists, List<Style> styles) {
+        songArtists.delete(songId);
+        for (int i = 0; i < artists.size(); i++) songArtists.insert(songId, artists.get(i), i);
+        genreMapper.delete(new LambdaQueryWrapper<Genre>().eq(Genre::getSongId, songId));
+        for (Style style : styles) {
+            Genre genre = new Genre();
+            genre.setSongId(songId);
+            genre.setStyleId(style.getStyleId());
+            genreMapper.insert(genre);
         }
+    }
+
+    private String styleNames(List<Style> styles) {
+        String names = styles.stream().map(Style::getName).collect(Collectors.joining(","));
+        if (names.length() > 255) throw new BusinessException("所选风格名称总长度不能超过255字");
+        return names;
     }
 
     @Override
     @Transactional
-    public void updateSong(SongUpdateDto songUpdateDto) {
-
-        Song existing = songMapper.selectById(songUpdateDto.getSongId());
-        if (existing == null) {
-            throw new BusinessException("歌曲不存在");
-        }
-
+    public void addSong(SongAddDto dto) {
+        var artists = artistIds(dto.getArtistIds(), dto.getArtistId());
+        var styles = styles(dto.getStyleIds(), dto.getStyle());
         Song song = new Song();
-        BeanUtils.copyProperties(songUpdateDto, song);
-        if (songMapper.updateById(song) == 0) {
-            throw new BusinessException("更新失败");
-        }
+        BeanUtils.copyProperties(dto, song);
+        song.setArtistId(artists.get(0));
+        song.setStyle(styleNames(styles));
+        if (songMapper.insert(song) == 0) throw new BusinessException("添加失败");
+        associations(song.getSongId(), artists, styles);
+    }
 
-        Long songId = songUpdateDto.getSongId();
+    @Override
+    @Transactional
+    public void updateSong(SongUpdateDto dto) {
+        var artists = artistIds(dto.getArtistIds(), dto.getArtistId());
+        var styles = styles(dto.getStyleIds(), dto.getStyle());
+        if (songMapper.lock(dto.getSongId()) == null) throw new BusinessException(404, "歌曲不存在");
+        Song song = new Song();
+        BeanUtils.copyProperties(dto, song);
+        song.setArtistId(artists.get(0));
+        song.setStyle(styleNames(styles));
+        if (songMapper.updateById(song) == 0) throw new BusinessException("更新失败");
+        associations(song.getSongId(), artists, styles);
+    }
 
-        genreMapper.delete(new LambdaQueryWrapper<Genre>().eq(Genre::getSongId, songId));
-
-        String styleStr = songUpdateDto.getStyle();
-        if (styleStr != null && !styleStr.isEmpty()) {
-            List<String> styles = Arrays.asList(styleStr.split(","));
-
-            List<Style> styleList =
-                    styleMapper.selectList(
-                            new LambdaQueryWrapper<Style>().in(Style::getName, styles));
-
-            for (Style style : styleList) {
-                Genre genre = new Genre();
-                genre.setSongId(songId);
-                genre.setStyleId(style.getStyleId());
-                genreMapper.insert(genre);
-            }
-        }
+    @Override
+    @Transactional
+    public void updateSongLyric(Long songId, String url, String lyric) {
+        Song song = songMapper.lock(songId);
+        if (song == null) throw new BusinessException(404, "歌曲不存在");
+        songMapper.update(
+                null,
+                new LambdaUpdateWrapper<Song>()
+                        .eq(Song::getSongId, songId)
+                        .set(Song::getLyricUrl, url)
+                        .set(Song::getLyric, lyric));
+        UploadCleanup.afterCommit(fileStorage, song.getLyricUrl());
     }
 
     @Override
@@ -281,6 +328,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         }
         String cover = song.getCoverUrl();
         String audio = song.getAudioUrl();
+        UploadCleanup.afterCommit(fileStorage, song.getLyricUrl());
 
         if (cover != null && !cover.isEmpty()) {
             UploadCleanup.afterCommit(fileStorage, cover);
@@ -299,6 +347,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
     public void deleteSongs(List<Long> songIds) {
 
         List<Song> songs = songMapper.selectByIds(songIds);
+        songs.forEach(song -> UploadCleanup.afterCommit(fileStorage, song.getLyricUrl()));
         List<String> coverUrlList =
                 songs.stream()
                         .map(Song::getCoverUrl)

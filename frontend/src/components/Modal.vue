@@ -8,7 +8,7 @@ function key(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close');
   if (e.key === 'Tab') {
     const items = box.value?.querySelectorAll<HTMLElement>(
-      'button:not(:disabled),input,textarea,select,a[href]',
+      'button:not(:disabled),input:not([tabindex="-1"]),textarea,select,a[href]',
     );
     if (!items?.length) return;
     const first = items[0],

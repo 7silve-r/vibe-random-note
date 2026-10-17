@@ -3,11 +3,13 @@ package com.silver.storage.service.impl;
 import com.silver.storage.exception.FileStorageException;
 import com.silver.storage.model.UploadTarget;
 import com.silver.storage.service.FileStorage;
+import com.silver.storage.validation.LyricFile;
 import com.silver.storage.validation.UploadValidator;
 import io.minio.*;
 import io.minio.errors.ErrorResponseException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -41,7 +43,13 @@ public class MinioFileStorage implements FileStorage {
     public String upload(MultipartFile file, UploadTarget target) {
         if (target == null) throw new IllegalArgumentException("请选择上传用途");
         try {
-            var content = UploadValidator.validate(file, target.audio());
+            var content =
+                    target == UploadTarget.SONG_LYRIC
+                            ? new UploadValidator.Content(
+                                    LyricFile.read(file).getBytes(StandardCharsets.UTF_8),
+                                    "text/plain; charset=utf-8",
+                                    ".lrc")
+                            : UploadValidator.validate(file, target.audio());
             String key = target.folder() + "/" + UUID.randomUUID() + content.extension();
             if (target.privateBucket()) requirePrivateBucket();
             try (var stream = new ByteArrayInputStream(content.bytes())) {
@@ -100,7 +108,10 @@ public class MinioFileStorage implements FileStorage {
             String prefix = (target.privateBucket() ? privatePrefix : publicPrefix);
             if (!url.startsWith(prefix)) continue;
             String key = url.substring(prefix.length());
-            String extensions = target.audio() ? "mp3|wav|ogg|flac|m4a" : "png|jpg|jpeg|webp";
+            String extensions =
+                    target == UploadTarget.SONG_LYRIC
+                            ? "lrc|txt"
+                            : target.audio() ? "mp3|wav|ogg|flac|m4a" : "png|jpg|jpeg|webp";
             if (key.matches(target.folder() + "/[0-9a-fA-F-]{36}\\.(?:" + extensions + ")"))
                 return new StoredObject(target, key);
         }

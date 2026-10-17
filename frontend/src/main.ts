@@ -5,5 +5,7 @@ import router from './router';
 import './style.css';
 import './sky.css';
 import './poetry.css';
+import './forms.css';
+import './music.css';
 const app = createApp(App);
 app.use(createPinia()).use(router).mount('#app');

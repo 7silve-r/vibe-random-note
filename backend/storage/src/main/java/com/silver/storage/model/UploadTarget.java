@@ -6,6 +6,7 @@ public enum UploadTarget {
     ARTIST_AVATAR("artists", false, false),
     SONG_COVER("songCovers", false, false),
     SONG_AUDIO("songs", false, true),
+    SONG_LYRIC("lyrics", false, false),
     PLAYLIST_COVER("playlists", false, false),
     BANNER("banners", false, false),
     MUSIC_USER_AVATAR("users", false, false);

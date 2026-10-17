@@ -2,9 +2,11 @@ package com.silver.music.controller;
 
 import com.silver.common.PageResult;
 import com.silver.common.Result;
+import com.silver.common.exception.BusinessException;
 import com.silver.music.dto.SongQueryDto;
 import com.silver.music.service.SongService;
 import com.silver.music.vo.SongDetailVo;
+import com.silver.music.vo.SongLyricVo;
 import com.silver.music.vo.SongVo;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -30,5 +32,12 @@ public class SongController {
     @GetMapping("/getSongDetail/{id}")
     public Result<SongDetailVo> getSongDetail(@PathVariable("id") Long songId) {
         return Result.success(songService.getSongDetail(songId));
+    }
+
+    @GetMapping("/{id}/lyrics")
+    public Result<SongLyricVo> lyrics(@PathVariable Long id) {
+        var song = songService.getById(id);
+        if (song == null) throw new BusinessException(404, "歌曲不存在");
+        return Result.success(new SongLyricVo(song.getLyric(), song.getLyricUrl()));
     }
 }

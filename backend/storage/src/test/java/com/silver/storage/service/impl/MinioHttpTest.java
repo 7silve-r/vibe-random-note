@@ -71,7 +71,16 @@ class MinioHttpTest {
                 byte[] audio = new byte[44];
                 System.arraycopy("RIFF".getBytes(StandardCharsets.US_ASCII), 0, audio, 0, 4);
                 System.arraycopy("WAVE".getBytes(StandardCharsets.US_ASCII), 0, audio, 8, 4);
-                var file = target.audio() ? new MockMultipartFile("file", audio) : TestFiles.png();
+                var file =
+                        target == UploadTarget.SONG_LYRIC
+                                ? new MockMultipartFile(
+                                        "file",
+                                        "song.lrc",
+                                        "text/plain",
+                                        "[00:01.00]歌词".getBytes(StandardCharsets.UTF_8))
+                                : target.audio()
+                                        ? new MockMultipartFile("file", audio)
+                                        : TestFiles.png();
                 String url = storage.upload(file, target);
                 String bucket = target.privateBucket() ? "private" : "music";
                 assertTrue(

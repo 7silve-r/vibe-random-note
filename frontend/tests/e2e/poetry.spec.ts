@@ -1,3 +1,4 @@
+import { select } from './select';
 import { test, expect, Page } from '@playwright/test';
 const first = {
   id: 1,
@@ -117,14 +118,16 @@ test('imported collections drive navigation, filters, favorites and quotes', asy
   await page.goto('/poetry');
   await page.locator('.poetry-collections').getByRole('link', { name: /诗经/ }).click();
   await expect(page).toHaveURL(/dataset=shijing/);
-  await expect(page.getByLabel('文集', { exact: true })).toHaveValue('shijing');
+  await expect(page.getByRole('combobox', { name: '文集', exact: true })).toContainText('诗经');
   await expect(page.locator('.poetry-item')).toHaveCount(1);
-  await expect(page.getByLabel('朝代').locator('option')).toContainText(['全部时期', '唐', '先秦']);
-  await page.getByLabel('朝代').selectOption('先秦');
+  await page.getByRole('combobox', { name: '朝代', exact: true }).click();
+  await expect(page.getByRole('option')).toHaveText(['全部时期', '唐', '先秦']);
+  await page.keyboard.press('Escape');
+  await select(page, '朝代', '先秦');
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await page.reload();
-  await expect(page.getByLabel('文集', { exact: true })).toHaveValue('shijing');
-  await expect(page.getByLabel('朝代')).toHaveValue('先秦');
+  await expect(page.getByRole('combobox', { name: '文集', exact: true })).toContainText('诗经');
+  await expect(page.getByRole('combobox', { name: '朝代', exact: true })).toContainText('先秦');
   for (const width of [320, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await page.screenshot({
@@ -140,13 +143,13 @@ test('imported collections drive navigation, filters, favorites and quotes', asy
   await page.getByRole('button', { name: '收藏', exact: true }).click();
   await expect(page.getByRole('button', { name: '已收藏', exact: true })).toBeVisible();
   await page.getByRole('link', { name: '我的收藏', exact: true }).click();
-  await page.getByLabel('文集', { exact: true }).selectOption('shijing');
+  await select(page, '文集', '诗经');
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await expect(page).toHaveURL(/tab=favorites/);
   await page.locator('.poetry-item').click();
   await page.getByRole('button', { name: '写点感想' }).click();
   await expect(page.getByLabel('书写', { exact: true })).toHaveValue(/关关雎鸠/);
-  await expect(page.getByLabel('可见性')).toHaveValue('私有');
+  await expect(page.getByRole('combobox', { name: '可见性', exact: true })).toContainText('私有');
 });
 
 test('catalog failure can be retried', async ({ page }) => {
@@ -162,7 +165,9 @@ test('catalog failure can be retried', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveText('文集暂不可用');
   failed = false;
   await page.getByRole('button', { name: '重新加载', exact: true }).click();
-  await expect(page.getByLabel('文集', { exact: true }).locator('option')).toHaveCount(3);
+  await page.getByRole('combobox', { name: '文集', exact: true }).click();
+  await expect(page.getByRole('option')).toHaveCount(3);
+  await page.keyboard.press('Escape');
   await expect(page.locator('.poetry-item')).toHaveCount(3);
 });
 
@@ -177,7 +182,7 @@ test('quote starts a private draft without publishing', async ({ page }) => {
   await page.getByRole('button', { name: '写点感想' }).click();
   await expect(page.getByLabel('标题', { exact: true })).toHaveValue('读《相思》有感');
   await expect(page.getByLabel('书写', { exact: true })).toHaveValue(/> 红豆生南国/);
-  await expect(page.getByLabel('可见性')).toHaveValue('私有');
+  await expect(page.getByRole('combobox', { name: '可见性', exact: true })).toContainText('私有');
   expect(writes).toEqual([]);
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('vibe-draft:1:new')!).content),

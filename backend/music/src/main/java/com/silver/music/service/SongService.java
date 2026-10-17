@@ -32,6 +32,8 @@ public interface SongService extends IService<Song> {
 
     void updateSongAudio(Long songId, String audioUrl, String duration);
 
+    void updateSongLyric(Long songId, String lyricUrl, String lyric);
+
     void deleteSong(Long songId);
 
     void deleteSongs(List<Long> songIds);

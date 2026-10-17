@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS `music_song`  (
   `artist_id` bigint(0) NOT NULL COMMENT '歌手 id',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '歌名',
   `album` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '专辑',
+  `lyric_url` varchar(512) NULL,
   `lyric` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '歌词',
   `duration` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '歌曲时长',
   `style` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '歌曲风格',
@@ -135,3 +136,17 @@ CREATE TABLE IF NOT EXISTS `music_comment_like` (
   CONSTRAINT comment_like_comment FOREIGN KEY (`comment_id`) REFERENCES `music_comment` (`id`) ON DELETE CASCADE,
   CONSTRAINT comment_like_user FOREIGN KEY (`user_id`) REFERENCES `account_user` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS music_song_artist (
+    song_id BIGINT NOT NULL,
+    artist_id BIGINT NOT NULL,
+    position INT NOT NULL,
+    PRIMARY KEY (song_id, artist_id),
+    INDEX song_artist_artist (artist_id),
+    CONSTRAINT song_artist_song FOREIGN KEY (song_id) REFERENCES music_song(id) ON DELETE CASCADE,
+    CONSTRAINT song_artist_artist_fk FOREIGN KEY (artist_id) REFERENCES music_artist(id) ON DELETE RESTRICT
+);
+
+INSERT INTO music_song_artist (song_id, artist_id, position)
+SELECT s.id, s.artist_id, 0 FROM music_song s
+WHERE NOT EXISTS (SELECT 1 FROM music_song_artist a WHERE a.song_id = s.id);

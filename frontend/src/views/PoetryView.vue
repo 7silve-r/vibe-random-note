@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSelect from '../components/AppSelect.vue';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, Shuffle, Search } from 'lucide-vue-next';
@@ -153,20 +154,30 @@ watch(
     @submit.prevent="search"
   >
     <input v-model="keyword" aria-label="搜索诗词" maxlength="100" placeholder="搜索标题或作者…" />
-    <select v-model="dataset" aria-label="文集">
-      <option value="">全部文集</option>
-      <option v-for="item in catalog?.collections" :key="item.code" :value="item.code">
-        {{ item.name }}
-      </option>
-    </select>
-    <select v-model="dynasty" aria-label="朝代">
-      <option value="">全部时期</option>
-      <option v-for="item in catalog?.dynasties" :key="item">{{ item }}</option>
-    </select>
-    <select v-model="kind" aria-label="体裁">
-      <option value="">全部体裁</option>
-      <option v-for="item in catalog?.kinds" :key="item">{{ item }}</option>
-    </select>
+    <AppSelect
+      v-model="dataset"
+      label="文集"
+      :options="[
+        { value: '', label: '全部文集' },
+        ...(catalog?.collections || []).map((item) => ({ value: item.code, label: item.name })),
+      ]"
+    />
+    <AppSelect
+      v-model="dynasty"
+      label="朝代"
+      :options="[
+        { value: '', label: '全部时期' },
+        ...(catalog?.dynasties || []).map((item) => ({ value: item, label: item })),
+      ]"
+    />
+    <AppSelect
+      v-model="kind"
+      label="体裁"
+      :options="[
+        { value: '', label: '全部体裁' },
+        ...(catalog?.kinds || []).map((item) => ({ value: item, label: item })),
+      ]"
+    />
     <button type="submit"><Search :size="17" />查找</button>
     <RouterLink v-if="route.query.authorId" to="/poetry?tab=library">清除作者筛选</RouterLink>
   </form>
