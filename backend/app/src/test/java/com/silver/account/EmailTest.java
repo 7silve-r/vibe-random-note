@@ -7,12 +7,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.silver.account.utils.JwtUtil;
+import jakarta.mail.Multipart;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
+import java.util.Properties;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -60,16 +63,22 @@ class EmailTest {
 
     @Test
     void send() throws Exception {
+        when(mail.createMimeMessage())
+                .thenReturn(new MimeMessage(Session.getInstance(new Properties())));
         mvc.perform(
                         post("/api/email/code")
                                 .contentType("application/json")
                                 .content(
                                         "{\"email\":\"reader@example.com\",\"purpose\":\"reset\"}"))
                 .andExpect(status().isOk());
-        var sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        var sent = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mail).send(sent.capture());
-        assertArrayEquals(new String[] {"reader@example.com"}, sent.getValue().getTo());
-        String value = sent.getValue().getText().replaceAll("[^0-9]", "").substring(0, 6);
+        assertEquals("reader@example.com", sent.getValue().getAllRecipients()[0].toString());
+        var root = (Multipart) sent.getValue().getContent();
+        var alternative = (Multipart) root.getBodyPart(0).getContent();
+        String text = (String) alternative.getBodyPart(0).getContent();
+        String value = text.replaceAll("[^0-9]", "").substring(0, 6);
+        assertTrue(((String) alternative.getBodyPart(1).getContent()).contains(value));
         assertTrue(
                 encoder.matches(
                         value,

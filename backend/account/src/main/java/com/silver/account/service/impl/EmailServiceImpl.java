@@ -54,7 +54,7 @@ public class EmailServiceImpl implements EmailService {
         record.setAttempts(0);
         if (saved == null) codeMapper.insert(record);
         else codeMapper.updateById(record);
-        mail.send(email, "VIBE_RANDOM_NOTE-验证码", "验证码：" + code + "，5分钟内有效。");
+        mail.sendVerificationCode(email, code, purpose);
     }
 
     private void verify(EmailDto dto, String purpose) {
